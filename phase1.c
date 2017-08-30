@@ -57,6 +57,11 @@ void startup(int argc, char *argv[])
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): initializing process table, ProcTable[]\n");
 
+    for (int i = 0; i < MAXPROC; i++)
+    {
+        ProcTable[i].pid = 0;
+    }
+
     // Initialize the Ready list, etc.
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): initializing the Ready list\n");
@@ -127,10 +132,31 @@ int fork1(char *name, int (*startFunc)(char *), char *arg,
         USLOSS_Console("fork1(): creating process %s\n", name);
 
     // test if in kernel mode; halt if in user mode
+    int kernalMode = USLOSS_PsrGet() & 1;
+    if (!kernalMode)
+    {
+        USLOSS_Console("fork1(): Fork called in user mode.  Halting...\n");
+        USLOSS_Halt(1);
+    }
+
 
     // Return if stack size is too small
+    if (stacksize < USLOSS_MIN_STACK)
+    {
+        USLOSS_Console("fork1(): Fork called with stack size < USLOSS_MIN_STACK.  Halting...\n");
+        return -2;
+    }
+
 
     // Is there room in the process table? What is the next PID?
+    procSlot = nextPid;
+    procStruct proc = ProcTable[(procSlot - 1) % MAXPROC];
+
+    if (proc.pid != 0) // check if the process is quit
+    {
+        // this pid already corresponds to a process
+        // choose a new slot for the new process, if possible
+    }
 
     // fill-in entry in process table */
     if ( strlen(name) >= (MAXNAME - 1) ) {
@@ -164,6 +190,21 @@ int fork1(char *name, int (*startFunc)(char *), char *arg,
 
     return -1;  // -1 is not correct! Here to prevent warning.
 } /* fork1 */
+
+int getNextPid()
+{
+    int pid = nextPid;
+    procStruct proc = ProcTable[(pid - 1) % MAXPROC];
+
+    if (proc.pid == 0)
+    {
+        return pid;
+    }
+
+   if ( /* process quit */
+
+    return -1; // no space left in the table
+}
 
 /* ------------------------------------------------------------------------
    Name - launch
