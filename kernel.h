@@ -41,3 +41,7 @@ union psrValues {
 #define SENTINELPID 1
 #define SENTINELPRIORITY (MINPRIORITY + 1)
 
+#define STATUS_READY 0
+#define STATUS_BLOCKED 1
+#define STATUS_QUIT 2
+#define STATUS_ZAPPED 3

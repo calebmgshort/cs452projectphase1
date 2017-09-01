@@ -15,11 +15,14 @@
 #include "kernel.h"
 
 /* ------------------------- Prototypes ----------------------------------- */
-int sentinel (char *);
-extern int start1 (char *);
-void dispatcher(void);
+void startup(int, char *);
+void finish(int, char *);
 void launch();
+  static int getNextPid();
+  static int pidToSlot(int);
+extern int start1 (char *);
 static void checkDeadlock();
+void disableInterrupts();
 
 
 /* -------------------------- Globals ------------------------------------- */
@@ -38,7 +41,6 @@ procPtr Current;
 
 // the next pid to be assigned
 unsigned int nextPid = SENTINELPID;
-
 
 /* -------------------------- Functions ----------------------------------- */
 /* ------------------------------------------------------------------------
@@ -81,7 +83,7 @@ void startup(int argc, char *argv[])
         }
         USLOSS_Halt(1);
     }
-  
+
     // start the test process
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): calling fork1() for start1\n");
@@ -123,8 +125,6 @@ void finish(int argc, char *argv[])
    Side Effects - ReadyList is changed, ProcTable is changed, Current
                   process information changed
    ------------------------------------------------------------------------ */
-int getNextPid();
-int pidToSlot(int);
 
 int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority)
 {
@@ -240,7 +240,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
  * 
  * TODO clear out dead processes when space is needed.
  */
-int getNextPid()
+static int getNextPid()
 {
     int slot = pidToSlot(nextPid);
     procStruct proc = ProcTable[slot];
@@ -268,7 +268,7 @@ int getNextPid()
 /*
  * Helper for fork1() that hashes a pid into a table index.
  */
-int pidToSlot(int pid)
+static int pidToSlot(int pid)
 {
     return (pid - 1) % MAXPROC;
 }
@@ -313,14 +313,14 @@ void launch()
 
 /* ------------------------------------------------------------------------
    Name - join
-   Purpose - Wait for a child process (if one has been forked) to quit.  If 
+   Purpose - Wait for a child process (if one has been forked) to quit.  If
              one has already quit, don't wait.
-   Parameters - a pointer to an int where the termination code of the 
+   Parameters - a pointer to an int where the termination code of the
                 quitting process is to be stored.
    Returns - the process id of the quitting child joined on.
              -1 if the process was zapped in the join
              -2 if the process has no children
-   Side Effects - If no child process has quit before join is called, the 
+   Side Effects - If no child process has quit before join is called, the
                   parent is removed from the ready list and blocked.
    ------------------------------------------------------------------------ */
 int join(int *status)
@@ -343,6 +343,54 @@ void quit(int status)
     p1_quit(Current->pid);
 } /* quit */
 
+/* ------------------------------------------------------------------------
+   Name - zap
+   Purpose - Zaps a process with the given process id
+   Parameters - the process id of the process to zap
+   Returns - -1: the calling process itself was zapped while in zap.
+              0: the zapped process has called quit.
+   Side Effects - Forces another process to quit
+   ------------------------------------------------------------------------ */
+int zap(int pid){
+  if(pid < 0 || pid > MAXPROC){
+    USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid] == null){
+    USLOSS_Console("zap failed because the given process does not exist\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid].pid == Current->pid){
+    USLOSS_Console("zap failed because the given process to zap is itself\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid].status == STATUS_QUIT){
+    USLOSS_Console("zap failed because the given process has already quit\n");
+    USLOSS_Halt(1)
+  }
+
+  ProcTable[pid].status = STATUS_ZAPPED;
+  while(ProcTable[pid].status != STATUS_QUIT){
+    if(Current->status == STATUS_ZAPPED)
+      return -1;
+  }
+  return 0;
+}
+
+/* ------------------------------------------------------------------------
+   Name - isZapped
+   Purpose - Determines if the current process has been zapped
+   Parameters - none
+   Returns - 0 - the current process has not been zapped
+             1 - the current process has been zapped
+   Side Effects - none
+   ------------------------------------------------------------------------ */
+int isZapped(void){
+  if(Current->status == STATUS_ZAPPED)
+    return 1;
+  else
+    return 0;
+}
 
 /* ------------------------------------------------------------------------
    Name - dispatcher
