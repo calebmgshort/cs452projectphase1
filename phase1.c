@@ -280,12 +280,12 @@ int zap(int pid){
     USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
     USLOSS_Halt(1)
   }
-  else if(ProcTable[pid].pid == Current->pid){
-    USLOSS_Console("zap failed because the given process to zap is itself\n");
-    USLOSS_Halt(1)
-  }
   else if(ProcTable[pid] == null){
     USLOSS_Console("zap failed because the given process does not exist\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid].pid == Current->pid){
+    USLOSS_Console("zap failed because the given process to zap is itself\n");
     USLOSS_Halt(1)
   }
   else if(ProcTable[pid].status == STATUS_QUIT){
