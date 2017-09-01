@@ -324,7 +324,7 @@ void quit(int status)
             USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
             USLOSS_Halt(1);
         }
-        proc = proct->nextSiblingPtr;
+        proc = proc->nextSiblingPtr;
     }
     Current->status = STATUS_QUIT;
     // TODO take this process of the ready list
