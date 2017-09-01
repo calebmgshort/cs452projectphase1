@@ -36,7 +36,7 @@ procStruct ProcTable[MAXPROC];
 static procPtr ReadyList;
 
 // current process ID
-procPtr Current;
+procPtr Current = NULL;
 
 // the next pid to be assigned
 unsigned int nextPid = SENTINELPID;
@@ -131,8 +131,8 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         USLOSS_Console("fork1(): creating process %s\n", name);
 
     // test if in kernel mode; halt if in user mode
-    unsigned int kernalMode = USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE;
-    if (!kernalMode)
+    unsigned int kernelMode = USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE;
+    if (!kernelMode)
     {
         USLOSS_Console("fork1(): Fork called in user mode.  Halting...\n");
         USLOSS_Halt(1);
@@ -158,6 +158,25 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
 
     int procSlot = pidToSlot(pid);
     procPtr proc = &ProcTable[procSlot];
+
+    // fill out Current's children pointers
+    if (Current != NULL)
+    {
+        if (Current->childProcPtr == NULL)
+        {
+            Current->childProcPtr = proc;
+        }
+        else
+        {
+            // Current has children, look for youngest older sibling
+            procPtr olderSib = Current->childProcPtr;
+            while (olderSib->nextSiblingPtr != NULL)
+            {
+                olderSib = olderSib->nextSiblingPtr;
+            }
+            olderSib->nextSiblingPtr = proc;
+        }
+    }
 
     // fill-in entry in process table
     proc->nextProcPtr = NULL;
@@ -195,11 +214,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
 
     // Initialize context for this process, but use launch function pointer for
     // the initial value of the process's program counter (PC)
-    USLOSS_ContextInit(&(proc->state),
-                       proc->stack,
-                       proc->stackSize,
-                       NULL,
-                       launch);
+    USLOSS_ContextInit(&(proc->state), proc->stack, proc->stackSize, NULL, launch);
 
     proc->pid = pid;
 
@@ -219,14 +234,12 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     }
     proc->startFunc = startFunc;
 
-    proc->status = 0; // TODO define constant
+    proc->status = STATUS_READY;
 
     // for future phase(s)
     p1_fork(ProcTable[procSlot].pid);
 
     // Modify the ready list TODO
-
-    // TODO Modify current?
 
     // Call the dispatcher
     dispatcher(); // TODO is the sentinel a special case?
