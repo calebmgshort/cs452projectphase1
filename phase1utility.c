@@ -8,24 +8,22 @@
 
    ------------------------------------------------------------------------ */
 
-#include "phase1.h"
-#include "kernel.h"
 #include "phase1utility.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+
+extern unsigned int nextPid;
+extern procStruct ProcTable[];
 
 /*
  * Helper for fork1() that calculates the pid for the next process.
  *
  * TODO clear out dead processes when space is needed.
  */
-static int getNextPid()
+int getNextPid()
 {
     int slot = pidToSlot(nextPid);
     procStruct proc = ProcTable[slot];
 
-    if (proc.pid == 0)
+    if (!processExists(proc))
     {
         return slot; // this slot was never occupied, so this pid is new
     }
@@ -34,7 +32,7 @@ static int getNextPid()
     for (int i = 0; i < MAXPROC; i++)
     {
         proc = ProcTable[(slot + i) % MAXPROC];
-        if (proc.pid == 0)
+        if (!processExists(proc))
         {
             return ((slot + i) % MAXPROC); // same as above
         }
@@ -48,7 +46,14 @@ static int getNextPid()
 /*
  * Helper for fork1() that hashes a pid into a table index.
  */
-static int pidToSlot(int pid)
+int pidToSlot(int pid)
 {
     return (pid) % MAXPROC;
+}
+
+bool processExists(procStruct process){
+  if(process.pid == 0)
+    return false;
+  else
+    return true;
 }

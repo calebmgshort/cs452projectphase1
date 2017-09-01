@@ -234,44 +234,6 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     return pid;
 } /* fork1 */
 
-/*
- * Helper for fork1() that calculates the pid for the next process.
- *
- * TODO clear out dead processes when space is needed.
- */
-static int getNextPid()
-{
-    int slot = pidToSlot(nextPid);
-    procStruct proc = ProcTable[slot];
-
-    if (proc.pid == 0)
-    {
-        return slot; // this slot was never occupied, so this pid is new
-    }
-
-    // slot is taken, use linear probing to search for an open slot
-    for (int i = 0; i < MAXPROC; i++)
-    {
-        proc = ProcTable[(slot + i) % MAXPROC];
-        if (proc.pid == 0)
-        {
-            return ((slot + i) % MAXPROC); // same as above
-        }
-    }
-
-    // TODO search for dead processes to remove
-
-    return -1; // no space left in the table
-}
-
-/*
- * Helper for fork1() that hashes a pid into a table index.
- */
-static int pidToSlot(int pid)
-{
-    return (pid) % MAXPROC;
-}
-
 /* ------------------------------------------------------------------------
    Name - launch
    Purpose - Dummy function to enable interrupts and launch a given process
@@ -355,7 +317,7 @@ int zap(int pid){
     USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
     USLOSS_Halt(1);
   }
-  else if(ProcTable[pidToSlot(pid)].pid == 0){
+  else if(!processExists(ProcTable[pidToSlot(pid)])){
     USLOSS_Console("zap failed because the given process does not exist\n");
     USLOSS_Halt(1);
   }
