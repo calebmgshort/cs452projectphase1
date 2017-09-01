@@ -353,14 +353,16 @@ int join(int *status)
    ------------------------------------------------------------------------ */
 void quit(int status)
 {
+    // check for any non quit children
     procPtr proc = Current->childProcPtr;
     while(proc != NULL)
     {
-        if (/* proc not quit */)
+        if (proc->status != STATUS_QUIT)
         {
             USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
             USLOSS_Halt(1);
         }
+        proc = proct->nextSiblingPtr;
     }
     Current->status = STATUS_QUIT;
     // TODO take this process of the ready list
