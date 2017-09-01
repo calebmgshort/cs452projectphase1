@@ -8,18 +8,17 @@
    ------------------------------------------------------------------------ */
 
 #include "phase1.h"
+#include "kernel.h"
+#include "phase1utility.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "kernel.h"
-
 /* ------------------------- Prototypes ----------------------------------- */
-void startup(int, char *);
-void finish(int, char *);
+void startup(int, char * []);
+void finish(int, char * []);
 void launch();
-  static int getNextPid();
-  static int pidToSlot(int);
+int sentinel (char *);
 extern int start1 (char *);
 static void checkDeadlock();
 void disableInterrupts();
@@ -185,7 +184,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     }
     else
         strcpy(proc->startArg, arg);
-    
+
     proc->stack = malloc(sizeof(char) * stacksize);
     if (proc->stack == NULL)
     {
@@ -193,7 +192,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         USLOSS_Halt(1);
     }
     proc->stackSize = stacksize;
-    
+
     // Initialize context for this process, but use launch function pointer for
     // the initial value of the process's program counter (PC)
     USLOSS_ContextInit(&(proc->state),
@@ -237,7 +236,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
 
 /*
  * Helper for fork1() that calculates the pid for the next process.
- * 
+ *
  * TODO clear out dead processes when space is needed.
  */
 static int getNextPid()
@@ -247,7 +246,7 @@ static int getNextPid()
 
     if (proc.pid == 0)
     {
-        return slot + 1; // this slot was never occupied, so this pid is new
+        return slot; // this slot was never occupied, so this pid is new
     }
 
     // slot is taken, use linear probing to search for an open slot
@@ -256,7 +255,7 @@ static int getNextPid()
         proc = ProcTable[(slot + i) % MAXPROC];
         if (proc.pid == 0)
         {
-            return ((slot + i) % MAXPROC) + 1; // same as above
+            return ((slot + i) % MAXPROC); // same as above
         }
     }
 
@@ -270,7 +269,7 @@ static int getNextPid()
  */
 static int pidToSlot(int pid)
 {
-    return (pid - 1) % MAXPROC;
+    return (pid) % MAXPROC;
 }
 
 /* ------------------------------------------------------------------------
@@ -298,7 +297,7 @@ void launch()
     {
         if (DEBUG && debugflag)
             USLOSS_Console("launch(): Bug in interrupt set.");
-    } 
+    }
 
     // Call the function passed to fork1, and capture its return value
     result = Current->startFunc(Current->startArg);
@@ -352,21 +351,21 @@ void quit(int status)
    Side Effects - Forces another process to quit
    ------------------------------------------------------------------------ */
 int zap(int pid){
-  if(pid < 0 || pid > MAXPROC){
+  if(pid < 0){
     USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
-    USLOSS_Halt(1)
+    USLOSS_Halt(1);
   }
-  else if(ProcTable[pid] == null){
+  else if(ProcTable[pidToSlot(pid)].pid == 0){
     USLOSS_Console("zap failed because the given process does not exist\n");
-    USLOSS_Halt(1)
+    USLOSS_Halt(1);
   }
-  else if(ProcTable[pid].pid == Current->pid){
+  else if(ProcTable[pidToSlot(pid)].pid == Current->pid){
     USLOSS_Console("zap failed because the given process to zap is itself\n");
-    USLOSS_Halt(1)
+    USLOSS_Halt(1);
   }
-  else if(ProcTable[pid].status == STATUS_QUIT){
+  else if(ProcTable[pidToSlot(pid)].status == STATUS_QUIT){
     USLOSS_Console("zap failed because the given process has already quit\n");
-    USLOSS_Halt(1)
+    USLOSS_Halt(1);
   }
 
   ProcTable[pid].status = STATUS_ZAPPED;

@@ -1,4 +1,9 @@
 /* Patrick's DEBUG printing constant... */
+#ifndef _KERNEL_H
+#define _KERNEL_H
+
+#include "phase1.h"
+
 #define DEBUG 1
 
 typedef struct procStruct procStruct;
@@ -45,3 +50,5 @@ union psrValues {
 #define STATUS_BLOCKED 1
 #define STATUS_QUIT 2
 #define STATUS_ZAPPED 3
+
+#endif
