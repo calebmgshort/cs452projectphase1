@@ -15,11 +15,19 @@
 #include "kernel.h"
 
 /* ------------------------- Prototypes ----------------------------------- */
-int sentinel (char *);
-extern int start1 (char *);
-void dispatcher(void);
+void startup(int, char *);
+void finish(int, char *);
+int fork1(char *, int (*startFunc)(char *), char *, int, int);
+  static int getNextPid();
 void launch();
+int join(int *);
+void quit(int);
+void dispatcher(void);
+int sentinel (char *);
+
+extern int start1 (char *);
 static void checkDeadlock();
+void disableInterrupts();
 
 
 /* -------------------------- Globals ------------------------------------- */
@@ -81,7 +89,7 @@ void startup(int argc, char *argv[])
         }
         USLOSS_Halt(1);
     }
-  
+
     // start the test process
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): calling fork1() for start1\n");
@@ -191,7 +199,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg,
     return -1;  // -1 is not correct! Here to prevent warning.
 } /* fork1 */
 
-int getNextPid()
+static int getNextPid()
 {
     int pid = nextPid;
     procStruct proc = ProcTable[(pid - 1) % MAXPROC];
@@ -201,7 +209,7 @@ int getNextPid()
         return pid;
     }
 
-   if ( /* process quit */
+   //if ( /* process quit */
 
     return -1; // no space left in the table
 }
@@ -236,14 +244,14 @@ void launch()
 
 /* ------------------------------------------------------------------------
    Name - join
-   Purpose - Wait for a child process (if one has been forked) to quit.  If 
+   Purpose - Wait for a child process (if one has been forked) to quit.  If
              one has already quit, don't wait.
-   Parameters - a pointer to an int where the termination code of the 
+   Parameters - a pointer to an int where the termination code of the
                 quitting process is to be stored.
    Returns - the process id of the quitting child joined on.
              -1 if the process was zapped in the join
              -2 if the process has no children
-   Side Effects - If no child process has quit before join is called, the 
+   Side Effects - If no child process has quit before join is called, the
                   parent is removed from the ready list and blocked.
    ------------------------------------------------------------------------ */
 int join(int *status)
