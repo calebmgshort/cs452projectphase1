@@ -19,6 +19,7 @@ void startup(int, char *);
 void finish(int, char *);
 void launch();
   static int getNextPid();
+  static int pidToSlot(int);
 extern int start1 (char *);
 static void checkDeadlock();
 void disableInterrupts();
@@ -124,87 +125,152 @@ void finish(int argc, char *argv[])
    Side Effects - ReadyList is changed, ProcTable is changed, Current
                   process information changed
    ------------------------------------------------------------------------ */
-int fork1(char *name, int (*startFunc)(char *), char *arg,
-          int stacksize, int priority)
-{
-    int procSlot = -1;
 
+int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority)
+{
     if (DEBUG && debugflag)
         USLOSS_Console("fork1(): creating process %s\n", name);
 
     // test if in kernel mode; halt if in user mode
-    int kernalMode = USLOSS_PsrGet() & 1;
+    unsigned int kernalMode = USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE;
     if (!kernalMode)
     {
         USLOSS_Console("fork1(): Fork called in user mode.  Halting...\n");
         USLOSS_Halt(1);
     }
 
-
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
     {
-        USLOSS_Console("fork1(): Fork called with stack size < USLOSS_MIN_STACK.  Halting...\n");
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Fork called with stack size < USLOSS_MIN_STACK.\n");
         return -2;
     }
 
-
     // Is there room in the process table? What is the next PID?
-    procSlot = nextPid;
-    procStruct proc = ProcTable[(procSlot - 1) % MAXPROC];
-
-    if (proc.pid != 0) // check if the process is quit
+    int pid = getNextPid();
+    if (pid == -1)
     {
-        // this pid already corresponds to a process
-        // choose a new slot for the new process, if possible
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): No room in the process table.\n");
+        return -1;
     }
+    nextPid = pid + 1;
 
-    // fill-in entry in process table */
-    if ( strlen(name) >= (MAXNAME - 1) ) {
+    int procSlot = pidToSlot(pid);
+    procPtr proc = &ProcTable[procSlot];
+
+    // fill-in entry in process table
+    proc->nextProcPtr = NULL;
+    proc->childProcPtr = NULL;
+    proc->nextSiblingPtr = NULL;
+
+    if (name == NULL)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Process name cannot be null.\n");
+        return -1;
+    }
+    if (strlen(name) >= (MAXNAME - 1)) {
         USLOSS_Console("fork1(): Process name is too long.  Halting...\n");
         USLOSS_Halt(1);
     }
-    strcpy(ProcTable[procSlot].name, name);
-    ProcTable[procSlot].startFunc = startFunc;
-    if ( arg == NULL )
+    strcpy(proc->name, name);
+
+    if (arg == NULL)
         ProcTable[procSlot].startArg[0] = '\0';
-    else if ( strlen(arg) >= (MAXARG - 1) ) {
+    else if (strlen(arg) >= (MAXARG - 1)) {
         USLOSS_Console("fork1(): argument too long.  Halting...\n");
         USLOSS_Halt(1);
     }
     else
-        strcpy(ProcTable[procSlot].startArg, arg);
-
+        strcpy(proc->startArg, arg);
+    
+    proc->stack = malloc(sizeof(char) * stacksize);
+    if (proc->stack == NULL)
+    {
+        USLOSS_Console("fork1(): Cannot allocate stack for process.  Halting...\n");
+        USLOSS_Halt(1);
+    }
+    proc->stackSize = stacksize;
+    
     // Initialize context for this process, but use launch function pointer for
     // the initial value of the process's program counter (PC)
-
-    USLOSS_ContextInit(&(ProcTable[procSlot].state),
-                       ProcTable[procSlot].stack,
-                       ProcTable[procSlot].stackSize,
+    USLOSS_ContextInit(&(proc->state),
+                       proc->stack,
+                       proc->stackSize,
                        NULL,
                        launch);
+
+    proc->pid = pid;
+
+    if (priority < 1 || priority > SENTINELPRIORITY)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Priority out of range.\n");
+        return -1;
+    }
+    proc->priority = priority;
+
+    if (startFunc == NULL)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Trying to start a process with no function.\n");
+        return -1;
+    }
+    proc->startFunc = startFunc;
+
+    proc->status = 0; // TODO define constant
 
     // for future phase(s)
     p1_fork(ProcTable[procSlot].pid);
 
-    // More stuff to do here...
+    // Modify the ready list TODO
 
-    return -1;  // -1 is not correct! Here to prevent warning.
+    // TODO Modify current?
+
+    // Call the dispatcher
+    dispatcher(); // TODO is the sentinel a special case?
+
+    return pid;
 } /* fork1 */
 
+/*
+ * Helper for fork1() that calculates the pid for the next process.
+ * 
+ * TODO clear out dead processes when space is needed.
+ */
 static int getNextPid()
 {
-    int pid = nextPid;
-    procStruct proc = ProcTable[(pid - 1) % MAXPROC];
+    int slot = pidToSlot(nextPid);
+    procStruct proc = ProcTable[slot];
 
     if (proc.pid == 0)
     {
-        return pid;
+        return slot + 1; // this slot was never occupied, so this pid is new
     }
 
-   //if ( /* process quit */
+    // slot is taken, use linear probing to search for an open slot
+    for (int i = 0; i < MAXPROC; i++)
+    {
+        proc = ProcTable[(slot + i) % MAXPROC];
+        if (proc.pid == 0)
+        {
+            return ((slot + i) % MAXPROC) + 1; // same as above
+        }
+    }
+
+    // TODO search for dead processes to remove
 
     return -1; // no space left in the table
+}
+
+/*
+ * Helper for fork1() that hashes a pid into a table index.
+ */
+static int pidToSlot(int pid)
+{
+    return (pid - 1) % MAXPROC;
 }
 
 /* ------------------------------------------------------------------------
@@ -223,6 +289,16 @@ void launch()
         USLOSS_Console("launch(): started\n");
 
     // Enable interrupts
+    unsigned int psr = USLOSS_PsrGet();
+    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
+    psr = psr & ~USLOSS_PSR_PREV_INT; // disregard old prev bit
+    psr = psr | (currentInterrupt << 2); // move current int into prev int
+    psr = psr | USLOSS_PSR_CURRENT_INT; // turn on interrupts
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    } 
 
     // Call the function passed to fork1, and capture its return value
     result = Current->startFunc(Current->startArg);
