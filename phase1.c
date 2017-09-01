@@ -17,14 +17,8 @@
 /* ------------------------- Prototypes ----------------------------------- */
 void startup(int, char *);
 void finish(int, char *);
-int fork1(char *, int (*startFunc)(char *), char *, int, int);
-  static int getNextPid();
 void launch();
-int join(int *);
-void quit(int);
-void dispatcher(void);
-int sentinel (char *);
-
+  static int getNextPid();
 extern int start1 (char *);
 static void checkDeadlock();
 void disableInterrupts();
@@ -46,7 +40,6 @@ procPtr Current;
 
 // the next pid to be assigned
 unsigned int nextPid = SENTINELPID;
-
 
 /* -------------------------- Functions ----------------------------------- */
 /* ------------------------------------------------------------------------
@@ -274,6 +267,54 @@ void quit(int status)
     p1_quit(Current->pid);
 } /* quit */
 
+/* ------------------------------------------------------------------------
+   Name - zap
+   Purpose - Zaps a process with the given process id
+   Parameters - the process id of the process to zap
+   Returns - -1: the calling process itself was zapped while in zap.
+              0: the zapped process has called quit.
+   Side Effects - Forces another process to quit
+   ------------------------------------------------------------------------ */
+int zap(int pid){
+  if(pid < 0 || pid > MAXPROC){
+    USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid].pid == Current->pid){
+    USLOSS_Console("zap failed because the given process to zap is itself\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid] == null){
+    USLOSS_Console("zap failed because the given process does not exist\n");
+    USLOSS_Halt(1)
+  }
+  else if(ProcTable[pid].status == STATUS_QUIT){
+    USLOSS_Console("zap failed because the given process has already quit\n");
+    USLOSS_Halt(1)
+  }
+
+  ProcTable[pid].status = STATUS_ZAPPED;
+  while(ProcTable[pid].status != STATUS_QUIT){
+    if(Current->status == STATUS_ZAPPED)
+      return -1;
+  }
+  return 0;
+}
+
+/* ------------------------------------------------------------------------
+   Name - isZapped
+   Purpose - Determines if the current process has been zapped
+   Parameters - none
+   Returns - 0 - the current process has not been zapped
+             1 - the current process has been zapped
+   Side Effects - none
+   ------------------------------------------------------------------------ */
+int isZapped(void){
+  if(Current->status == STATUS_ZAPPED)
+    return 1;
+  else
+    return 0;
+}
 
 /* ------------------------------------------------------------------------
    Name - dispatcher
