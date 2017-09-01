@@ -123,8 +123,10 @@ void finish(int argc, char *argv[])
    Side Effects - ReadyList is changed, ProcTable is changed, Current
                   process information changed
    ------------------------------------------------------------------------ */
-int fork1(char *name, int (*startFunc)(char *), char *arg,
-          int stacksize, int priority)
+int getNextPid();
+int pidToSlot(int);
+
+int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority)
 {
     if (DEBUG && debugflag)
         USLOSS_Console("fork1(): creating process %s\n", name);
@@ -195,8 +197,8 @@ int fork1(char *name, int (*startFunc)(char *), char *arg,
     // Initialize context for this process, but use launch function pointer for
     // the initial value of the process's program counter (PC)
     USLOSS_ContextInit(&(proc->state),
-                       proc->.stack,
-                       proc->.stackSize,
+                       proc->stack,
+                       proc->stackSize,
                        NULL,
                        launch);
 
@@ -218,7 +220,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg,
     }
     proc->startFunc = startFunc;
 
-    roc->status = 0; // TODO define constant
+    proc->status = 0; // TODO define constant
 
     // for future phase(s)
     p1_fork(ProcTable[procSlot].pid);
@@ -292,7 +294,11 @@ void launch()
     psr = psr & ~USLOSS_PSR_PREV_INT; // disregard old prev bit
     psr = psr | (currentInterrupt << 2); // move current int into prev int
     psr = psr | USLOSS_PSR_CURRENT_INT; // turn on interrupts
-    USLOSS_PsrSet(psr); 
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    } 
 
     // Call the function passed to fork1, and capture its return value
     result = Current->startFunc(Current->startArg);
