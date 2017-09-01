@@ -36,7 +36,7 @@ procStruct ProcTable[MAXPROC];
 static procPtr ReadyList;
 
 // current process ID
-procPtr Current = NULL;
+procPtr Current;
 
 // the next pid to be assigned
 unsigned int nextPid = SENTINELPID;
@@ -66,9 +66,10 @@ void startup(int argc, char *argv[])
     // Initialize the Ready list, etc.
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): initializing the Ready list\n");
-    ReadyList = NULL;
+    ReadyList = NULL; // TODO ready list
+    Current = NULL;
 
-    // Initialize the clock interrupt handler
+    // Initialize the clock interrupt handler TODO
 
     // startup a sentinel process
     if (DEBUG && debugflag)
@@ -352,6 +353,19 @@ int join(int *status)
    ------------------------------------------------------------------------ */
 void quit(int status)
 {
+    procPtr proc = Current->childProcPtr;
+    while(proc != NULL)
+    {
+        if (/* proc not quit */)
+        {
+            USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
+            USLOSS_Halt(1);
+        }
+    }
+    Current->status = STATUS_QUIT;
+    // TODO take this process of the ready list
+    // TODO notify parent of process death
+
     p1_quit(Current->pid);
 } /* quit */
 
