@@ -16,5 +16,6 @@
 int getNextPid();
 int pidToSlot(int);
 bool processExists(procStruct);
+int initProc(procPtr, char *, int(*startFunc)(char *), char *, int, int, int);
 
 #endif
