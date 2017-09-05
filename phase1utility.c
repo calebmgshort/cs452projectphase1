@@ -55,7 +55,8 @@ int pidToSlot(int pid)
     return (pid) % MAXPROC;
 }
 
-bool processExists(procStruct process){
+bool processExists(procStruct process)
+{
   if(process.pid == 0)
     return false;
   else
@@ -67,6 +68,7 @@ bool inKernelMode()
 {
   return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
 }
+
 /*
  * Helper for fork1() that fills out all of the fields in the procStruct that
  * proc points to. pid should be the pid of the new process. See fork1() for

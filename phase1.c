@@ -184,7 +184,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     }
 
     // for future phase(s)
-    p1_fork(ProcTable[procSlot].pid);
+    p1_fork(proc->pid);
 
     // Modify the ready list TODO
 
