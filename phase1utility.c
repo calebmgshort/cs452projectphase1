@@ -57,3 +57,7 @@ bool processExists(procStruct process){
   else
     return true;
 }
+
+bool inKernelMode(){
+  return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
+}

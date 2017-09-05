@@ -16,5 +16,6 @@
 int getNextPid();
 int pidToSlot(int);
 bool processExists(procStruct);
+bool inKernelMode();
 
 #endif

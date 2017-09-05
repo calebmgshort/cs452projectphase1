@@ -132,8 +132,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         USLOSS_Console("fork1(): creating process %s\n", name);
 
     // test if in kernel mode; halt if in user mode
-    unsigned int kernelMode = USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE;
-    if (!kernelMode)
+    if (!inKernelMode())
     {
         USLOSS_Console("fork1(): Fork called in user mode.  Halting...\n");
         USLOSS_Halt(1);
