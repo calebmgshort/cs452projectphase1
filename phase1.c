@@ -125,7 +125,6 @@ void finish(int argc, char *argv[])
    Side Effects - ReadyList is changed, ProcTable is changed, Current
                   process information changed
    ------------------------------------------------------------------------ */
-
 int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority)
 {
     if (DEBUG && debugflag)
@@ -178,63 +177,11 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         }
     }
 
-    // fill-in entry in process table
-    proc->nextProcPtr = NULL;
-    proc->childProcPtr = NULL;
-    proc->nextSiblingPtr = NULL;
-
-    if (name == NULL)
+    // fill out entry in process table
+    if (initProc(proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
-        if (DEBUG && debugflag)
-            USLOSS_Console("fork1(): Process name cannot be null.\n");
         return -1;
     }
-    if (strlen(name) >= (MAXNAME - 1)) {
-        USLOSS_Console("fork1(): Process name is too long.  Halting...\n");
-        USLOSS_Halt(1);
-    }
-    strcpy(proc->name, name);
-
-    if (arg == NULL)
-        ProcTable[procSlot].startArg[0] = '\0';
-    else if (strlen(arg) >= (MAXARG - 1)) {
-        USLOSS_Console("fork1(): argument too long.  Halting...\n");
-        USLOSS_Halt(1);
-    }
-    else
-        strcpy(proc->startArg, arg);
-
-    proc->stack = malloc(sizeof(char) * stacksize);
-    if (proc->stack == NULL)
-    {
-        USLOSS_Console("fork1(): Cannot allocate stack for process.  Halting...\n");
-        USLOSS_Halt(1);
-    }
-    proc->stackSize = stacksize;
-
-    // Initialize context for this process, but use launch function pointer for
-    // the initial value of the process's program counter (PC)
-    USLOSS_ContextInit(&(proc->state), proc->stack, proc->stackSize, NULL, launch);
-
-    proc->pid = pid;
-
-    if (priority < 1 || priority > SENTINELPRIORITY)
-    {
-        if (DEBUG && debugflag)
-            USLOSS_Console("fork1(): Priority out of range.\n");
-        return -1;
-    }
-    proc->priority = priority;
-
-    if (startFunc == NULL)
-    {
-        if (DEBUG && debugflag)
-            USLOSS_Console("fork1(): Trying to start a process with no function.\n");
-        return -1;
-    }
-    proc->startFunc = startFunc;
-
-    proc->status = STATUS_READY;
 
     // for future phase(s)
     p1_fork(ProcTable[procSlot].pid);

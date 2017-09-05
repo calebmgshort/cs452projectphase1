@@ -12,6 +12,10 @@
 
 extern unsigned int nextPid;
 extern procStruct ProcTable[];
+extern int debugflag;
+
+void launch();
+
 
 /*
  * Helper for fork1() that calculates the pid for the next process.
@@ -58,6 +62,89 @@ bool processExists(procStruct process){
     return true;
 }
 
+
 bool inKernelMode(){
   return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
+
+/*
+ * Helper for fork1() that fills out all of the fields in the procStruct that
+ * proc points to. pid should be the pid of the new process. See fork1() for
+ * all other parameters.
+ *
+ * Returns -1 iff one of the parameters is invalid in such a way that fork1()
+ * should return -1. Returns 0 otherwise.
+ */
+int initProc(procPtr proc, char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority, int pid)
+{
+    // fill out list pointers
+    proc->nextProcPtr = NULL;
+    proc->childProcPtr = NULL;
+    proc->nextSiblingPtr = NULL;
+
+    // fill out name
+    if (name == NULL)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Process name cannot be null.\n");
+        return -1;
+    }
+    if (strlen(name) >= (MAXNAME - 1))
+    {
+        USLOSS_Console("fork1(): Process name is too long.  Halting...\n");
+        USLOSS_Halt(1);
+    }
+    strcpy(proc->name, name);
+
+    // fill out argument
+    if (arg == NULL)
+    {
+        proc->startArg[0] = '\0';
+    }
+    else if (strlen(arg) >= (MAXARG - 1))
+    {
+        USLOSS_Console("fork1(): argument too long.  Halting...\n");
+        USLOSS_Halt(1);
+    }
+    else
+    {
+        strcpy(proc->startArg, arg);
+    }
+
+    // create the stack
+    proc->stack = malloc(sizeof(char) * stacksize);
+    if (proc->stack == NULL)
+    {
+        USLOSS_Console("fork1(): Cannot allocate stack for process.  Halting...\n");
+        USLOSS_Halt(1);
+    }
+    proc->stackSize = stacksize;
+
+    // Initialize context for this process, but use launch function pointer for
+    // the initial value of the process's program counter (PC)
+    USLOSS_ContextInit(&(proc->state), proc->stack, proc->stackSize, NULL, launch); // TODO does sentinel still use launch?
+
+    // fill out priority
+    if (priority < 1 || priority > SENTINELPRIORITY)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Priority out of range.\n");
+        return -1;
+    }
+    proc->priority = priority;
+
+    // fill out startFunc
+    if (startFunc == NULL)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("fork1(): Trying to start a process with no function.\n");
+        return -1;
+    }
+    proc->startFunc = startFunc;
+
+    // fill out the rest of the fields
+    proc->pid = pid;
+    proc->status = STATUS_READY;
+
+    return 0;
+
 }
