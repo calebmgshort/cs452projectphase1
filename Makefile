@@ -1,15 +1,15 @@
-#PREFIX = /home/theimbichner/Csc452Project/
-PREFIX = /Users/Caleb/Documents/ComputerScience/csc452/project/compilefolder#${HOME}
+PREFIX = /home/theimbichner/Csc452Project/
+#PREFIX = /Users/Caleb/Documents/ComputerScience/csc452/project/compilefolder#${HOME}
 
 TARGET = libphase1.a
 ASSIGNMENT = 452phase1
 CC = gcc
 AR = ar
 
-COBJS = phase1.o phase1utility.o
+COBJS = phase1.o phase1utility.o queue.o
 CSRCS = ${COBJS:.o=.c}
 
-HDRS = kernel.h phase1.h
+HDRS = kernel.h phase1.h phase1utility.h queue.h
 
 INCLUDE = ${PREFIX}/include
 
@@ -40,5 +40,5 @@ clean:
 
 phase1.o:	kernel.h
 
-submit:	$(CSRCS) $(HDRS) Makefile
-	tar cvzf phase1.tgz $(CSRCS) $(HDRS) Makefile
+submit:	$(CSRCS) $(HDRS) Makefile p1.c
+	tar cvzf phase1.tgz $(CSRCS) $(HDRS) Makefile p1.c
