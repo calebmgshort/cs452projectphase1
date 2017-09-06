@@ -293,6 +293,8 @@ void quit(int status)
       quitChildPtr->nextQuitSiblingPtr = Current;
     }
 
+    // TODO: Unblock the processes that zapped this process; see the todo at the end of zap
+
     p1_quit(Current->pid);
 } /* quit */
 
@@ -323,6 +325,7 @@ int zap(int pid){
   }
 
   ProcTable[pid].status = STATUS_ZAPPED;
+  // TODO: Block this process; see the todo at the end of quit
   while(ProcTable[pid].status != STATUS_QUIT){
     if(Current->status == STATUS_ZAPPED)
       return -1;
