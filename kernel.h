@@ -14,6 +14,9 @@ struct procStruct {
    procPtr         nextProcPtr;
    procPtr         childProcPtr;
    procPtr         nextSiblingPtr;
+   procPtr         parentPtr;
+   procPtr         quitChildPtr;
+   procPtr         nextQuitSiblingPtr;
    char            name[MAXNAME];     /* process's name */
    char            startArg[MAXARG];  /* args passed to process */
    USLOSS_Context  state;             /* current context for process */

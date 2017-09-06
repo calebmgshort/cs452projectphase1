@@ -77,12 +77,14 @@ bool inKernelMode()
  * Returns -1 iff one of the parameters is invalid in such a way that fork1()
  * should return -1. Returns 0 otherwise.
  */
-int initProc(procPtr proc, char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority, int pid)
+int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority, int pid)
 {
     // fill out list pointers
     proc->nextProcPtr = NULL;
     proc->childProcPtr = NULL;
     proc->nextSiblingPtr = NULL;
+    proc->quitChildPtr = NULL;
+    proc->parentPtr = parentPtr;
 
     // fill out name
     if (name == NULL)

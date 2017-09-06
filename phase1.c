@@ -10,6 +10,7 @@
 #include "phase1.h"
 #include "kernel.h"
 #include "phase1utility.h"
+#include "queue.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -33,7 +34,7 @@ int debugflag = 1;
 procStruct ProcTable[MAXPROC];
 
 // Process lists
-static procPtr ReadyList;
+pqPtr ReadyList;
 
 // current process ID
 procPtr Current;
@@ -178,7 +179,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     }
 
     // fill out entry in process table
-    if (initProc(proc, name, startFunc, arg, stacksize, priority, pid) == -1)
+    if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
         return -1;
     }
@@ -262,19 +263,32 @@ int join(int *status)
 void quit(int status)
 {
     // check for any non quit children
-    procPtr proc = Current->childProcPtr;
-    while(proc != NULL)
+    procPtr childPtr = Current->childProcPtr;
+    while(childPtr != NULL)
     {
-        if (proc->status != STATUS_QUIT)
+        if (childPtr->status != STATUS_QUIT)
         {
             USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
             USLOSS_Halt(1);
         }
-        proc = proc->nextSiblingPtr;
+        childPtr = childPtr->nextSiblingPtr;
     }
     Current->status = STATUS_QUIT;
-    // TODO take this process of the ready list
-    // TODO notify parent of process death
+    // Notify parent that this process has quit
+    procPtr parentPtr = Current->parentPtr;
+    if(parentPtr->quitChildPtr == NULL)
+    {
+      parentPtr->quitChildPtr = Current;
+    }
+    else{
+      procPtr quitChildPtr = parentPtr->quitChildPtr;
+      // add Current to nextQuitSiblingPtr list
+      while(quitChildPtr->nextQuitSiblingPtr != NULL)
+      {
+        quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+      }
+      quitChildPtr->nextQuitSiblingPtr = Current;
+    }
 
     p1_quit(Current->pid);
 } /* quit */
