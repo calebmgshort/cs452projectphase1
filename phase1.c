@@ -250,6 +250,21 @@ void launch()
    ------------------------------------------------------------------------ */
 int join(int *status)
 {
+    // TODO quit children still appear in child list -- take them out
+
+    // case 1: Has no quit or unquit children.
+    if (Current->childProcPtr == NULL)
+    {
+    }
+    // case 2: At least 1 quit child waiting to be joined
+    else if (Current->quitChildPtr == NULL)
+    {
+    }
+    // case 3: Only has children who have not yet quit.
+    else
+    {
+    }
+
     return -1;  // -1 is not correct! Here to prevent warning.
 } /* join */
 
