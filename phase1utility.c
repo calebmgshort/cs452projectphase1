@@ -84,6 +84,7 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     proc->childProcPtr = NULL;
     proc->nextSiblingPtr = NULL;
     proc->quitChildPtr = NULL;
+    proc->nextQuitSiblingPtr = NULL;
     proc->parentPtr = parentPtr;
 
     // fill out name
