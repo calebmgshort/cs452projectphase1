@@ -10,6 +10,7 @@
 #include "phase1.h"
 #include "kernel.h"
 #include "phase1utility.h"
+#include "queue.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -33,7 +34,7 @@ int debugflag = 1;
 procStruct ProcTable[MAXPROC];
 
 // Process lists
-static procPtr ReadyList;
+static priorityQueue ReadyList;
 
 // current process ID
 procPtr Current;
@@ -52,9 +53,9 @@ unsigned int nextPid = SENTINELPID;
    ----------------------------------------------------------------------- */
 void startup(int argc, char *argv[])
 {
-    int result; /* value returned by call to fork1() */
+    int result; // value returned by call to fork1()
 
-    /* initialize the process table */
+    // initialize the process table
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): initializing process table, ProcTable[]\n");
 
@@ -66,7 +67,7 @@ void startup(int argc, char *argv[])
     // Initialize the Ready list, etc.
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): initializing the Ready list\n");
-    ReadyList = NULL; // TODO ready list
+    initPriorityQueue(&ReadyList);
     Current = NULL;
 
     // Initialize the clock interrupt handler TODO
@@ -74,12 +75,13 @@ void startup(int argc, char *argv[])
     // startup a sentinel process
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): calling fork1() for sentinel\n");
-    result = fork1("sentinel", sentinel, NULL, USLOSS_MIN_STACK,
-                    SENTINELPRIORITY);
-    if (result < 0) {
-        if (DEBUG && debugflag) {
-            USLOSS_Console("startup(): fork1 of sentinel returned error, ");
-            USLOSS_Console("halting...\n");
+    result = fork1("sentinel", sentinel, NULL, USLOSS_MIN_STACK, SENTINELPRIORITY);
+    if (result < 0)
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("startup(): fork1 of sentinel returned error.  ");
+            USLOSS_Console("Halting...\n");
         }
         USLOSS_Halt(1);
     }
@@ -88,14 +90,18 @@ void startup(int argc, char *argv[])
     if (DEBUG && debugflag)
         USLOSS_Console("startup(): calling fork1() for start1\n");
     result = fork1("start1", start1, NULL, 2 * USLOSS_MIN_STACK, 1);
-    if (result < 0) {
-        USLOSS_Console("startup(): fork1 for start1 returned an error, ");
-        USLOSS_Console("halting...\n");
+    if (result < 0)
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("startup(): fork1 for start1 returned an error.  ");
+            USLOSS_Console("Halting...\n");
+        }
         USLOSS_Halt(1);
     }
 
     USLOSS_Console("startup(): Should not see this message! ");
-    USLOSS_Console("Returned from fork1 call that created start1\n");
+    USLOSS_Console("Returned from fork1 call that created start1.\n");
 
     return;
 } /* startup */
@@ -186,11 +192,14 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     // for future phase(s)
     p1_fork(proc->pid);
 
-    // Modify the ready list TODO
+    // Modify the ready list
+    addProc(ReadyList, proc);
 
     // Call the dispatcher
-    dispatcher(); // TODO is the sentinel a special case?
-
+    if (priority != SENTINELPRIORITY)
+    {
+        dispatcher();
+    }
     return pid;
 } /* fork1 */
 
