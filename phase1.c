@@ -3,7 +3,7 @@
 
    University of Arizona
    Computer Science 452
-   Fall 2015
+   Fall 2017
 
    ------------------------------------------------------------------------ */
 
@@ -136,7 +136,11 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (DEBUG && debugflag)
         USLOSS_Console("fork1(): creating process %s\n", name);
 
+    // ensure that we are in kernel mode
     checkMode("fork1");
+
+    // enable interrupts
+    enableInterrupts();
 
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
@@ -214,16 +218,7 @@ void launch()
         USLOSS_Console("launch(): started\n");
 
     // Enable interrupts
-    unsigned int psr = USLOSS_PsrGet();
-    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
-    psr = psr & ~USLOSS_PSR_PREV_INT; // disregard old prev bit
-    psr = psr | (currentInterrupt << 2); // move current int into prev int
-    psr = psr | USLOSS_PSR_CURRENT_INT; // turn on interrupts
-    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
-    {
-        if (DEBUG && debugflag)
-            USLOSS_Console("launch(): Bug in interrupt set.");
-    }
+    enableInterrupts();
 
     // Call the function passed to fork1, and capture its return value
     result = Current->startFunc(Current->startArg);
@@ -263,6 +258,9 @@ int join(int *status)
     // case 3: Only has children who have not yet quit.
     else
     {
+        // This process must block
+        Current->status = STATUS_BLOCKED;
+        dispatcher();
     }
 
     return -1;  // -1 is not correct! Here to prevent warning.
@@ -413,8 +411,60 @@ static void checkDeadlock()
  */
 void disableInterrupts()
 {
-    // turn the interrupts OFF iff we are in kernel mode
-    // if not in kernel mode, print an error message and
-    // halt USLOSS
+    // check for kernel mode
+    checkMode("disableInterrupts");
 
+    // get the current value of the psr
+    unsigned int psr = USLOSS_PsrGet();
+
+    // the current interrupt bit of the psr
+    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
+
+    // set the prev interrupt bit to zero
+    psr = psr & ~USLOSS_PSR_PREV_INT;
+
+    // move the current interrupt bit to the prev interrupt bit
+    psr = psr | (currentInterrupt << 2);
+
+    // set the current interrupt bit to 0
+    psr = psr & ~USLOSS_PSR_CURRENT_INT;
+
+    // if USLOSS gives an error, we've done something wrong!
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    }
 } /* disableInterrupts */
+
+/*
+ * Enables the interrupts.
+ */
+void enableInterrupts()
+{
+    // check for interrupts
+    checkMode("enableInterrupts");
+
+    // get the current value of the psr
+    unsigned int psr = USLOSS_PsrGet();
+
+    // the current interrupt bit of the psr
+    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
+
+    // set the prev interrupt bit to zero
+    psr = psr & ~USLOSS_PSR_PREV_INT;
+
+    // move the current interrupt bit to the prev interrupt bit
+    psr = psr | (currentInterrupt << 2);
+
+    // set the current interrupt bit to 1
+    psr = psr | USLOSS_PSR_CURRENT_INT;
+
+    // if USLOSS gives an error, we've done something wrong!
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    }
+} /* enableInterrupts */
+
