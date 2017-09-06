@@ -151,5 +151,17 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     proc->status = STATUS_READY;
 
     return 0;
+}
 
+/*
+ * Checks the current mode and halts if in user mode.
+ */
+void checkMode(char * funcName)
+{
+    // test if in kernel mode; halt if in user mode
+    if (!inKernelMode())
+    {
+        USLOSS_Console("%s(): Called in user mode.  Halting...\n", funcName);
+        USLOSS_Halt(1);
+    }
 }
