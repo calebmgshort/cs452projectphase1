@@ -18,5 +18,6 @@ int pidToSlot(int);
 bool processExists(procStruct);
 bool inKernelMode();
 int initProc(procPtr, char *, int(*startFunc)(char *), char *, int, int, int);
+void checkMode(char *);
 
 #endif

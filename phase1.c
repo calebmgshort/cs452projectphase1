@@ -136,12 +136,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (DEBUG && debugflag)
         USLOSS_Console("fork1(): creating process %s\n", name);
 
-    // test if in kernel mode; halt if in user mode
-    if (!inKernelMode())
-    {
-        USLOSS_Console("fork1(): Fork called in user mode.  Halting...\n");
-        USLOSS_Halt(1);
-    }
+    checkMode("fork1");
 
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
@@ -193,7 +188,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     p1_fork(proc->pid);
 
     // Modify the ready list
-    addProc(ReadyList, proc);
+    addProc(&ReadyList, proc);
 
     // Call the dispatcher
     if (priority != SENTINELPRIORITY)
