@@ -51,9 +51,11 @@ union psrValues {
 #define SENTINELPID 1
 #define SENTINELPRIORITY (MINPRIORITY + 1)
 
-#define STATUS_READY 0
-#define STATUS_BLOCKED 1
-#define STATUS_QUIT 2
-#define STATUS_ZAPPED 3
+// Status codes
+#define STATUS_READY 0         // Should be on the ready list.
+#define STATUS_BLOCKED 1       // Blocked because this is zapping another process. TODO rename
+#define STATUS_QUIT 2          // This process has quit.
+#define STATUS_ZAPPED 3        // This process has been zapped. It should quit eventually.
+#define STATUS_BLOCKED_JOIN 4  // Blocked waiting for a child to quit.
 
 #endif

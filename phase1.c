@@ -275,23 +275,36 @@ void launch()
    ------------------------------------------------------------------------ */
 int join(int *status)
 {
-    // TODO quit children still appear in child list -- take them out
-
     // case 1: Has no quit or unquit children.
     if (Current->childProcPtr == NULL)
     {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("join(): Process %d has no children to join.\n", Current->pid);
+        }
+        return -2;
     }
-    // case 2: At least 1 quit child waiting to be joined
-    else if (Current->quitChildPtr == NULL)
-    {
-    }
+
     // case 3: Only has children who have not yet quit.
-    else
+    if (Current->quitChildPtr == NULL)
     {
-        // This process must block
-        Current->status = STATUS_BLOCKED;
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("join(): Process %d has no quit children. Blocking.\n", Current->pid);
+        }
+
+        // This process must block and wait
+        Current->status = STATUS_BLOCKED_JOIN;
         dispatcher();
+
+        // Proceed like case 2 from here on
     }
+
+    // case 2: At least 1 quit child waiting to be joined
+    // TODO
+    // Current->quitChildPtr should not be NULL at this point!
+
+    // TODO uit children still appear in child list at this point -- take them out
 
     return -1;  // -1 is not correct! Here to prevent warning.
 } /* join */
