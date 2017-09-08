@@ -17,6 +17,8 @@ struct procStruct {
    procPtr         parentPtr;
    procPtr         quitChildPtr;
    procPtr         nextQuitSiblingPtr;
+   procPtr         procThatZappedMe;
+   procPtr         nextSiblingThatZapped;
    char            name[MAXNAME];     /* process's name */
    char            startArg[MAXARG];  /* args passed to process */
    USLOSS_Context  state;             /* current context for process */

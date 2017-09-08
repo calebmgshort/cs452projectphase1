@@ -23,6 +23,7 @@ int sentinel (char *);
 extern int start1 (char *);
 static void checkDeadlock();
 void disableInterrupts();
+void enableInterrupts();
 
 
 /* -------------------------- Globals ------------------------------------- */
@@ -306,7 +307,26 @@ void quit(int status)
       quitChildPtr->nextQuitSiblingPtr = Current;
     }
 
-    // TODO: Unblock the processes that zapped this process; see the todo at the end of zap
+    // Unblock the processes that zapped this process
+    if(Current->procThatZappedMe != NULL){
+      procPtr procThatZappedMe = Current->procThatZappedMe;
+      // Set each of these processes to ready
+      while(procThatZappedMe != NULL){
+        procThatZappedMe->status = STATUS_READY;
+        procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      }
+      // Remove the pointer to nextSiblingThatZapped for each
+      procThatZappedMe = Current->procThatZappedMe;
+      procPtr last = procThatZappedMe;
+      procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      while(procThatZappedMe != NULL){
+        last->nextSiblingThatZapped = NULL;
+        last = procThatZappedMe;
+        procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      }
+      // Remove the pointer to procThatZappedMe
+      Current->procThatZappedMe = NULL;
+    }
 
     p1_quit(Current->pid);
 } /* quit */
@@ -320,25 +340,38 @@ void quit(int status)
    Side Effects - Forces another process to quit
    ------------------------------------------------------------------------ */
 int zap(int pid){
+  procStruct processBeingZapped = ProcTable[pidToSlot(pid)];
   if(pid < 0){
     USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
     USLOSS_Halt(1);
   }
-  else if(!processExists(ProcTable[pidToSlot(pid)])){
+  else if(!processExists(processBeingZapped)){
     USLOSS_Console("zap failed because the given process does not exist\n");
     USLOSS_Halt(1);
   }
-  else if(ProcTable[pidToSlot(pid)].pid == Current->pid){
+  else if(processBeingZapped.pid == Current->pid){
     USLOSS_Console("zap failed because the given process to zap is itself\n");
     USLOSS_Halt(1);
   }
-  else if(ProcTable[pidToSlot(pid)].status == STATUS_QUIT){
+  else if(processBeingZapped.status == STATUS_QUIT){
     USLOSS_Console("zap failed because the given process has already quit\n");
     USLOSS_Halt(1);
   }
 
-  ProcTable[pid].status = STATUS_ZAPPED;
-  // TODO: Block this process; see the todo at the end of quit
+  // Add the current process to the list of processes that zapped the given process
+  processBeingZapped.status = STATUS_ZAPPED;
+  if(processBeingZapped.procThatZappedMe != NULL)
+    processBeingZapped.procThatZappedMe = Current;
+  else{
+    procPtr procThatZapped = processBeingZapped.procThatZappedMe;
+    while(procThatZapped->nextSiblingThatZapped != NULL){
+      procThatZapped = procThatZapped->nextSiblingThatZapped;
+    }
+    procThatZapped->nextSiblingThatZapped = Current;
+  }
+
+  Current->status = STATUS_BLOCKED;
+
   while(ProcTable[pid].status != STATUS_QUIT){
     if(Current->status == STATUS_ZAPPED)
       return -1;
@@ -470,4 +503,3 @@ void enableInterrupts()
             USLOSS_Console("launch(): Bug in interrupt set.");
     }
 } /* enableInterrupts */
-
