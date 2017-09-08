@@ -312,7 +312,7 @@ int join(int *status)
     }
     else{
       USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
-      USLOSS_Halt();
+      USLOSS_Halt(1);
     }
     // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
