@@ -387,6 +387,7 @@ void quit(int status)
     }
 
     p1_quit(Current->pid);
+    dispatcher();
 } /* quit */
 
 /* ------------------------------------------------------------------------
@@ -464,7 +465,15 @@ int isZapped(void){
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
-    // TODO move other block up here
+    // Put the old process back on the ready list, if appropriate.
+    if (Current != NULL && Current->status == STATUS_READY) // TODO any other statuses?
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("dispatcher(): The old process is still ready. Re-adding to ready list.\n");
+        }
+        addProc(&ReadyList, Current);
+    }
 
     // Get the next process from the ready list
     procPtr nextProcess = removeProc(&ReadyList);
@@ -481,16 +490,6 @@ void dispatcher(void)
         USLOSS_Console("dispatcher(): Next process is process %d.\n", nextProcess->pid);
     }
 
-    // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && Current->status == STATUS_READY) // TODO any other statuses?
-    {
-        if (DEBUG && debugflag)
-        {
-            USLOSS_Console("dispatcher(): The old process is still ready. Re-adding to ready list.\n");
-        }
-        addProc(&ReadyList, Current);
-    }
-
     // Switch Contexts
     USLOSS_Context *old = NULL;
     if (Current != NULL)
@@ -502,7 +501,7 @@ void dispatcher(void)
     {
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("dispatcher(): Performing context switch from process %d to process %d", Current->pid, nextProcess->pid);
+            USLOSS_Console("dispatcher(): Performing context switch from process %d to process %d\n", Current->pid, nextProcess->pid);
         }
         p1_switch(Current->pid, nextProcess->pid);
     }
@@ -566,12 +565,14 @@ void disableInterrupts()
     // set the current interrupt bit to 0
     psr = psr & ~USLOSS_PSR_CURRENT_INT;
 
+    /*
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
     {
         if (DEBUG && debugflag)
             USLOSS_Console("launch(): Bug in interrupt set.");
     }
+    */
 } /* disableInterrupts */
 
 /*
@@ -597,10 +598,12 @@ void enableInterrupts()
     // set the current interrupt bit to 1
     psr = psr | USLOSS_PSR_CURRENT_INT;
 
+    /*
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
     {
         if (DEBUG && debugflag)
             USLOSS_Console("launch(): Bug in interrupt set.");
     }
+    */
 } /* enableInterrupts */
