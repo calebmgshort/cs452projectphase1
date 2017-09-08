@@ -72,7 +72,8 @@ void startup(int argc, char *argv[])
     }
     initPriorityQueue(&ReadyList);
 
-    // Initialize the clock interrupt handler TODO
+    // Initialize the clock interrupt handler
+    USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
 
     // startup a sentinel process
     if (DEBUG && debugflag)
