@@ -342,6 +342,7 @@ void quit(int status)
       // Set each of these processes to ready
       while(procThatZappedMe != NULL){
         procThatZappedMe->status = STATUS_READY;
+        addProc(*ReadyList, procThatZappedMe);
         procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
       }
       // Remove the pointer to nextSiblingThatZapped for each
