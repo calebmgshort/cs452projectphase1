@@ -453,6 +453,8 @@ int isZapped(void){
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
+    // TODO move other block up here
+
     // Get the next process from the ready list
     procPtr nextProcess = removeProc(&ReadyList);
     if (nextProcess == NULL)
@@ -469,7 +471,7 @@ void dispatcher(void)
     }
 
     // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && Current->status == STATUS_READY)
+    if (Current != NULL && Current->status == STATUS_READY) // TODO any other statuses?
     {
         if (DEBUG && debugflag)
         {
@@ -478,8 +480,26 @@ void dispatcher(void)
         addProc(&ReadyList, Current);
     }
 
-    p1_switch(Current->pid, nextProcess->pid);
-} /* dispatcher */
+    // Switch Contexts
+    USLOSS_Context *old = NULL;
+    if (Current != NULL)
+    {
+        old = &(Current->state);
+    }
+    USLOSS_Context *new = &(nextProcess->state);
+    if (Current != NULL)
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("dispatcher(): Performing context switch from process %d to process %d", Current->pid, nextProcess->pid);
+        }
+        p1_switch(Current->pid, nextProcess->pid);
+    }
+    Current = nextProcess;
+    USLOSS_ContextSwitch(old, new);
+}
+
+ /* dispatcher */
 
 
 /* ------------------------------------------------------------------------
