@@ -295,16 +295,26 @@ int join(int *status)
 
         // This process must block and wait
         Current->status = STATUS_BLOCKED_JOIN;
+        // By the time this process resumes after dispatcher, it should resume to case 3
         dispatcher();
 
         // Proceed like case 2 from here on
     }
 
-    // case 2: At least 1 quit child waiting to be joined
-    // TODO
     // Current->quitChildPtr should not be NULL at this point!
-
-    // TODO uit children still appear in child list at this point -- take them out
+    // case 2: At least 1 quit child waiting to be joined
+    if(Current->quitChildPtr != NULL){
+      procPtr quitChildPtr = Current->quitChildPtr;
+      Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+      *status = quitChildPtr->quitStatus;
+      USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
+      return quitChildPtr->pid;
+    }
+    else{
+      USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
+      USLOSS_Halt();
+    }
+    // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
     return -1;  // -1 is not correct! Here to prevent warning.
 } /* join */
@@ -333,6 +343,7 @@ void quit(int status)
         childPtr = childPtr->nextSiblingPtr;
     }
     Current->status = STATUS_QUIT;
+    Current->quitStatus = status;
     // Notify parent that this process has quit
     procPtr parentPtr = Current->parentPtr;
     if(parentPtr->quitChildPtr == NULL)
