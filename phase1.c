@@ -348,6 +348,10 @@ void quit(int status)
       }
       quitChildPtr->nextQuitSiblingPtr = Current;
     }
+    if(parentPtr->status == STATUS_BLOCKED_JOIN){
+      parentPtr->status = STATUS_READY;
+      addProc(&ReadyList, parentPtr);
+    }
 
     // Unblock the processes that zapped this process
     if(Current->procThatZappedMe != NULL){
@@ -355,7 +359,7 @@ void quit(int status)
       // Set each of these processes to ready
       while(procThatZappedMe != NULL){
         procThatZappedMe->status = STATUS_READY;
-        addProc(*ReadyList, procThatZappedMe);
+        addProc(&ReadyList, procThatZappedMe);
         procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
       }
       // Remove the pointer to nextSiblingThatZapped for each
