@@ -23,7 +23,7 @@ int sentinel (char *);
 extern int start1 (char *);
 static void checkDeadlock();
 void disableInterrupts();
-
+void enableInterrupts();
 
 /* -------------------------- Globals ------------------------------------- */
 
@@ -37,7 +37,7 @@ procStruct ProcTable[MAXPROC];
 static priorityQueue ReadyList;
 
 // current process ID
-procPtr Current;
+procPtr Current = NULL;
 
 // the next pid to be assigned
 unsigned int nextPid = SENTINELPID;
@@ -57,24 +57,28 @@ void startup(int argc, char *argv[])
 
     // initialize the process table
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("startup(): initializing process table, ProcTable[]\n");
-
+    }
     for (int i = 0; i < MAXPROC; i++)
     {
         ProcTable[i].pid = 0;
     }
 
-    // Initialize the Ready list, etc.
+    // Initialize the Ready list
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("startup(): initializing the Ready list\n");
+    }
     initPriorityQueue(&ReadyList);
-    Current = NULL;
 
     // Initialize the clock interrupt handler TODO
 
     // startup a sentinel process
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("startup(): calling fork1() for sentinel\n");
+    }
     result = fork1("sentinel", sentinel, NULL, USLOSS_MIN_STACK, SENTINELPRIORITY);
     if (result < 0)
     {
@@ -88,7 +92,9 @@ void startup(int argc, char *argv[])
 
     // start the test process
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("startup(): calling fork1() for start1\n");
+    }
     result = fork1("start1", start1, NULL, 2 * USLOSS_MIN_STACK, 1);
     if (result < 0)
     {
@@ -100,6 +106,7 @@ void startup(int argc, char *argv[])
         USLOSS_Halt(1);
     }
 
+    // We should never come back to this part of the code!
     USLOSS_Console("startup(): Should not see this message! ");
     USLOSS_Console("Returned from fork1 call that created start1.\n");
 
@@ -134,19 +141,27 @@ void finish(int argc, char *argv[])
 int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int priority)
 {
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("fork1(): creating process %s\n", name);
+    }
 
     // ensure that we are in kernel mode
     checkMode("fork1");
 
     // enable interrupts
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("fork1(): enabling interrupts.\n");
+    }
     enableInterrupts();
 
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
     {
         if (DEBUG && debugflag)
+        {
             USLOSS_Console("fork1(): Fork called with stack size < USLOSS_MIN_STACK.\n");
+        }
         return -2;
     }
 
@@ -155,11 +170,18 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (pid == -1)
     {
         if (DEBUG && debugflag)
+        {
             USLOSS_Console("fork1(): No room in the process table.\n");
+        }
         return -1;
     }
     nextPid = pid + 1;
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("fork1(): Pid of new process determined to be %d.\n", pid);
+    }
 
+    // Start to fill out entry in the process table.
     int procSlot = pidToSlot(pid);
     procPtr proc = &ProcTable[procSlot];
 
@@ -182,7 +204,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         }
     }
 
-    // fill out entry in process table
+    // Initialize proc's fields.
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
         return -1;
@@ -192,11 +214,19 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     p1_fork(proc->pid);
 
     // Modify the ready list
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("fork1(): Adding process to the ready list.\n");
+    }
     addProc(&ReadyList, proc);
 
     // Call the dispatcher
     if (priority != SENTINELPRIORITY)
     {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("fork1(): Calling the dispatcher.\n");
+        }
         dispatcher();
     }
     return pid;
@@ -370,7 +400,30 @@ int isZapped(void){
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
-    procPtr nextProcess = NULL;
+    // Get the next process from the ready list
+    procPtr nextProcess = removeProc(&ReadyList);
+    if (nextProcess == NULL)
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("dispatcher(): Ready list did not contain the sentinel!  Halting...\n");
+        }
+        USLOSS_Halt(1);
+    }
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("dispatcher(): Next process is process %d.\n", nextProcess->pid);
+    }
+
+    // Put the old process back on the ready list, if appropriate.
+    if (Current != NULL && Current->status == STATUS_READY)
+    {
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("dispatcher(): The old process is still ready. Re-adding to ready list.\n");
+        }
+        addProc(&ReadyList, Current);
+    }
 
     p1_switch(Current->pid, nextProcess->pid);
 } /* dispatcher */

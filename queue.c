@@ -72,7 +72,7 @@ static bool isEmpty(queuePtr q)
 
 /*
  * Adds the process proc to the back of thie FIFO queue q. q must be non-NULL.
- * proc is assumed to have a NULL nextProcPtr.
+ * proc is assumed to have a NULL nextProcPtr and cannot be NULL.
  */
 static void addProcFIFO(queuePtr q, procPtr proc)
 {
