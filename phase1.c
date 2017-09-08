@@ -307,7 +307,10 @@ int join(int *status)
       procPtr quitChildPtr = Current->quitChildPtr;
       Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
       *status = quitChildPtr->quitStatus;
-      USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
+      if (DEBUG && debugflag)
+      {
+          USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
+      }
       return quitChildPtr->pid;
     }
     else{
@@ -346,22 +349,25 @@ void quit(int status)
     Current->quitStatus = status;
     // Notify parent that this process has quit
     procPtr parentPtr = Current->parentPtr;
-    if(parentPtr->quitChildPtr == NULL)
+    if (parentPtr != NULL)
     {
-      parentPtr->quitChildPtr = Current;
-    }
-    else{
-      procPtr quitChildPtr = parentPtr->quitChildPtr;
-      // add Current to nextQuitSiblingPtr list
-      while(quitChildPtr->nextQuitSiblingPtr != NULL)
+      if(parentPtr->quitChildPtr == NULL)
       {
-        quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+        parentPtr->quitChildPtr = Current;
       }
-      quitChildPtr->nextQuitSiblingPtr = Current;
-    }
-    if(parentPtr->status == STATUS_BLOCKED_JOIN){
-      parentPtr->status = STATUS_READY;
-      addProc(&ReadyList, parentPtr);
+      else{
+        procPtr quitChildPtr = parentPtr->quitChildPtr;
+        // add Current to nextQuitSiblingPtr list
+        while(quitChildPtr->nextQuitSiblingPtr != NULL)
+        {
+          quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+        }
+        quitChildPtr->nextQuitSiblingPtr = Current;
+      }
+      if(parentPtr->status == STATUS_BLOCKED_JOIN){
+        parentPtr->status = STATUS_READY;
+        addProc(&ReadyList, parentPtr);
+      }
     }
 
     // Unblock the processes that zapped this process
