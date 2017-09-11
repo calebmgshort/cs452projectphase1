@@ -57,16 +57,19 @@ int pidToSlot(int pid)
 
 bool processExists(procStruct process)
 {
-  if(process.pid == 0)
-    return false;
-  else
-    return true;
+    if(process.pid == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
-
 
 bool inKernelMode()
 {
-  return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
+    return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
 }
 
 /*
@@ -91,7 +94,9 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     if (name == NULL)
     {
         if (DEBUG && debugflag)
+        {
             USLOSS_Console("fork1(): Process name cannot be null.\n");
+        }
         return -1;
     }
     if (strlen(name) >= (MAXNAME - 1))
@@ -133,7 +138,9 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     if (priority < 1 || priority > SENTINELPRIORITY)
     {
         if (DEBUG && debugflag)
+        {
             USLOSS_Console("fork1(): Priority out of range.\n");
+        }
         return -1;
     }
     proc->priority = priority;
@@ -142,7 +149,9 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     if (startFunc == NULL)
     {
         if (DEBUG && debugflag)
+        {
             USLOSS_Console("fork1(): Trying to start a process with no function.\n");
+        }
         return -1;
     }
     proc->startFunc = startFunc;

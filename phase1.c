@@ -73,7 +73,7 @@ void startup(int argc, char *argv[])
     initPriorityQueue(&ReadyList);
 
     // Initialize the clock interrupt handler
-    USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
+    // USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
 
     // startup a sentinel process
     if (DEBUG && debugflag)
@@ -124,7 +124,9 @@ void startup(int argc, char *argv[])
 void finish(int argc, char *argv[])
 {
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("in finish...\n");
+    }
 } /* finish */
 
 /* ------------------------------------------------------------------------
@@ -246,7 +248,9 @@ void launch()
     int result;
 
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("launch(): started\n");
+    }
 
     // Enable interrupts
     enableInterrupts();
@@ -255,7 +259,9 @@ void launch()
     result = Current->startFunc(Current->startArg);
 
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("Process %d returned to launch\n", Current->pid);
+    }
 
     quit(result);
 
@@ -304,19 +310,21 @@ int join(int *status)
 
     // Current->quitChildPtr should not be NULL at this point!
     // case 2: At least 1 quit child waiting to be joined
-    if(Current->quitChildPtr != NULL){
-      procPtr quitChildPtr = Current->quitChildPtr;
-      Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
-      *status = quitChildPtr->quitStatus;
-      if (DEBUG && debugflag)
-      {
-          USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
-      }
-      return quitChildPtr->pid;
+    if(Current->quitChildPtr != NULL)
+    {
+        procPtr quitChildPtr = Current->quitChildPtr;
+        Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+        *status = quitChildPtr->quitStatus;
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
+        }
+        return quitChildPtr->pid;
     }
-    else{
-      USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
-      USLOSS_Halt(1);
+    else
+    {
+        USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
+        USLOSS_Halt(1);
     }
     // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
@@ -352,45 +360,50 @@ void quit(int status)
     procPtr parentPtr = Current->parentPtr;
     if (parentPtr != NULL)
     {
-      if(parentPtr->quitChildPtr == NULL)
-      {
-        parentPtr->quitChildPtr = Current;
-      }
-      else{
-        procPtr quitChildPtr = parentPtr->quitChildPtr;
-        // add Current to nextQuitSiblingPtr list
-        while(quitChildPtr->nextQuitSiblingPtr != NULL)
+        if(parentPtr->quitChildPtr == NULL)
         {
-          quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+            parentPtr->quitChildPtr = Current;
         }
-        quitChildPtr->nextQuitSiblingPtr = Current;
-      }
-      if(parentPtr->status == STATUS_BLOCKED_JOIN){
-        parentPtr->status = STATUS_READY;
-        addProc(&ReadyList, parentPtr);
-      }
+        else
+        {
+            procPtr quitChildPtr = parentPtr->quitChildPtr;
+            // add Current to nextQuitSiblingPtr list
+            while(quitChildPtr->nextQuitSiblingPtr != NULL)
+            {
+                quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+            }
+            quitChildPtr->nextQuitSiblingPtr = Current;
+        }
+        if(parentPtr->status == STATUS_BLOCKED_JOIN)
+        {
+            parentPtr->status = STATUS_READY;
+            addProc(&ReadyList, parentPtr);
+        }
     }
 
     // Unblock the processes that zapped this process
-    if(Current->procThatZappedMe != NULL){
-      procPtr procThatZappedMe = Current->procThatZappedMe;
-      // Set each of these processes to ready
-      while(procThatZappedMe != NULL){
-        procThatZappedMe->status = STATUS_READY;
-        addProc(&ReadyList, procThatZappedMe);
+    if(Current->procThatZappedMe != NULL)
+    {
+        procPtr procThatZappedMe = Current->procThatZappedMe;
+        // Set each of these processes to ready
+        while(procThatZappedMe != NULL)
+        {
+            procThatZappedMe->status = STATUS_READY;
+            addProc(&ReadyList, procThatZappedMe);
+            procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+        }
+        // Remove the pointer to nextSiblingThatZapped for each
+        procThatZappedMe = Current->procThatZappedMe;
+        procPtr last = procThatZappedMe;
         procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-      }
-      // Remove the pointer to nextSiblingThatZapped for each
-      procThatZappedMe = Current->procThatZappedMe;
-      procPtr last = procThatZappedMe;
-      procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-      while(procThatZappedMe != NULL){
-        last->nextSiblingThatZapped = NULL;
-        last = procThatZappedMe;
-        procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-      }
-      // Remove the pointer to procThatZappedMe
-      Current->procThatZappedMe = NULL;
+        while(procThatZappedMe != NULL)
+        {
+            last->nextSiblingThatZapped = NULL;
+            last = procThatZappedMe;
+            procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+        }
+        // Remove the pointer to procThatZappedMe
+        Current->procThatZappedMe = NULL;
     }
 
     p1_quit(Current->pid);
@@ -405,44 +418,56 @@ void quit(int status)
               0: the zapped process has called quit.
    Side Effects - Forces another process to quit
    ------------------------------------------------------------------------ */
-int zap(int pid){
-  procStruct processBeingZapped = ProcTable[pidToSlot(pid)];
-  if(pid < 0){
-    USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
-    USLOSS_Halt(1);
-  }
-  else if(!processExists(processBeingZapped)){
-    USLOSS_Console("zap failed because the given process does not exist\n");
-    USLOSS_Halt(1);
-  }
-  else if(processBeingZapped.pid == Current->pid){
-    USLOSS_Console("zap failed because the given process to zap is itself\n");
-    USLOSS_Halt(1);
-  }
-  else if(processBeingZapped.status == STATUS_QUIT){
-    USLOSS_Console("zap failed because the given process has already quit\n");
-    USLOSS_Halt(1);
-  }
-
-  // Add the current process to the list of processes that zapped the given process
-  processBeingZapped.status = STATUS_ZAPPED;
-  if(processBeingZapped.procThatZappedMe != NULL)
-    processBeingZapped.procThatZappedMe = Current;
-  else{
-    procPtr procThatZapped = processBeingZapped.procThatZappedMe;
-    while(procThatZapped->nextSiblingThatZapped != NULL){
-      procThatZapped = procThatZapped->nextSiblingThatZapped;
+int zap(int pid)
+{
+    procStruct processBeingZapped = ProcTable[pidToSlot(pid)];
+    if(pid < 0)
+    {
+        USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
+        USLOSS_Halt(1);
     }
-    procThatZapped->nextSiblingThatZapped = Current;
-  }
+    else if(!processExists(processBeingZapped))
+    {
+        USLOSS_Console("zap failed because the given process does not exist\n");
+        USLOSS_Halt(1);
+    }
+    else if(processBeingZapped.pid == Current->pid)
+    {
+        USLOSS_Console("zap failed because the given process to zap is itself\n");
+        USLOSS_Halt(1);
+    }
+    else if(processBeingZapped.status == STATUS_QUIT)
+    {
+        USLOSS_Console("zap failed because the given process has already quit\n");
+        USLOSS_Halt(1);
+    }
 
-  Current->status = STATUS_BLOCKED;
+    // Add the current process to the list of processes that zapped the given process
+    processBeingZapped.status = STATUS_ZAPPED;
+    if(processBeingZapped.procThatZappedMe != NULL)
+    {
+        processBeingZapped.procThatZappedMe = Current;
+    }
+    else
+    {
+        procPtr procThatZapped = processBeingZapped.procThatZappedMe;
+        while(procThatZapped->nextSiblingThatZapped != NULL)
+        {
+            procThatZapped = procThatZapped->nextSiblingThatZapped;
+        }
+        procThatZapped->nextSiblingThatZapped = Current;
+    }
 
-  while(ProcTable[pid].status != STATUS_QUIT){
-    if(Current->status == STATUS_ZAPPED)
-      return -1;
-  }
-  return 0;
+    Current->status = STATUS_BLOCKED;
+
+    while(ProcTable[pid].status != STATUS_QUIT)
+    {
+        if(Current->status == STATUS_ZAPPED)
+        {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 /* ------------------------------------------------------------------------
@@ -453,11 +478,16 @@ int zap(int pid){
              1 - the current process has been zapped
    Side Effects - none
    ------------------------------------------------------------------------ */
-int isZapped(void){
-  if(Current->status == STATUS_ZAPPED)
-    return 1;
-  else
-    return 0;
+int isZapped(void)
+{
+    if(Current->status == STATUS_ZAPPED)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /* ------------------------------------------------------------------------
@@ -514,9 +544,7 @@ void dispatcher(void)
     }
     Current = nextProcess;
     USLOSS_ContextSwitch(old, new);
-}
-
- /* dispatcher */
+} /* dispatcher */
 
 
 /* ------------------------------------------------------------------------
@@ -534,7 +562,9 @@ void dispatcher(void)
 int sentinel (char *dummy)
 {
     if (DEBUG && debugflag)
+    {
         USLOSS_Console("sentinel(): called\n");
+    }
     while (1)
     {
         checkDeadlock();
