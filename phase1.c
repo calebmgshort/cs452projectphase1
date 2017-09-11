@@ -300,34 +300,31 @@ int join(int *status)
 
         // This process must block and wait
         Current->status = STATUS_BLOCKED_JOIN;
-        // By the time this process resumes after dispatcher, it should resume to case 3
+        // Switch to another process. When we switch back, we'll jump in after dispatcher().
         dispatcher();
 
         // Proceed like case 2 from here on
     }
+    // case 2: At least 1 quit child waiting to be joined
 
     // Current->quitChildPtr should not be NULL at this point!
-    // case 2: At least 1 quit child waiting to be joined
-    if(Current->quitChildPtr != NULL)
-    {
-        procPtr quitChildPtr = Current->quitChildPtr;
-        Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
-        *status = quitChildPtr->quitStatus;
-        if (DEBUG && debugflag)
-        {
-            USLOSS_Console("Process %d's child %d quit with status %d.\n",
-                Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
-        }
-        return quitChildPtr->pid;
-    }
-    else
+    if(Current->quitChildPtr == NULL)
     {
         USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
         USLOSS_Halt(1);
     }
+
     // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
-    return -1;  // -1 is not correct! Here to prevent warning.
+    Current->quitChildPtr->status = STATUS_DEAD;
+    *status = Current->quitChildPtr->quitStatus
+    int quitPid = Current->quitChildPtr->pid;
+    Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitPid, *status);
+    }
+    return quitPid;
 } /* join */
 
 
