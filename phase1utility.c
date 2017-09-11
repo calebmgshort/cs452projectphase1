@@ -132,7 +132,7 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
 
     // Initialize context for this process, but use launch function pointer for
     // the initial value of the process's program counter (PC)
-    USLOSS_ContextInit(&(proc->state), proc->stack, proc->stackSize, NULL, launch); // TODO does sentinel still use launch?
+    USLOSS_ContextInit(&(proc->state), proc->stack, proc->stackSize, NULL, launch);
 
     // fill out priority
     if (priority < 1 || priority > SENTINELPRIORITY)
@@ -179,10 +179,10 @@ void checkMode(char * funcName)
 /*
  * Returns the number of children in the given process
  */
-int numChildren(procStruct process)
+int numChildren(procPtr process)
 {
   int numChildren = 0;
-  procPtr currentChildPtr = process.childProcPtr;
+  procPtr currentChildPtr = process->childProcPtr;
   while(currentChildPtr != NULL)
   {
     numChildren++;

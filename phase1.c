@@ -689,6 +689,6 @@ void dumpProcesses(){
     }
     // TODO: Test this to make it clean, also determine how to calculate CPU time
     USLOSS_Console("%d\t%d\t%d\t%s\t%d\t???\t%s\n",
-        process.pid, parentPid, process.priority, status, numChildren(process), process.name);
+        process.pid, parentPid, process.priority, status, numChildren(&process), process.name);
   }
 }

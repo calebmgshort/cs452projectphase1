@@ -46,8 +46,8 @@ struct psrBits
 
 union psrValues
 {
-   struct psrBits bits;
-   unsigned int integerPart;
+    struct psrBits bits;
+    unsigned int integerPart;
 };
 
 /* Some useful constants.  Add more as needed... */
