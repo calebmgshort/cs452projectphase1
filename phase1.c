@@ -578,14 +578,18 @@ static void checkDeadlock()
 /*
  * Returns the pid of the calling process
  */
-int getpid(){
+int getpid()
+{
   return Current->pid;
 }
 
 /*
- * Prints process information to the console
+ * This routine prints process information to the console. For each PCB in the process table,
+ * print its PID, parent’s PID, priority, process status (e.g. empty, running, ready, blocked,
+ * etc.), number of children, CPU time consumed, and name.
  */
-void dumpProcesses(){
+void dumpProcesses()
+{
   USLOSS_Console("PID\tParent PID\tPriority\tProcess Status\tNumber of Children\tCPU Time Consumed\tName\n");
   int i;
   for(i = 0; i < 50; i++)
@@ -618,5 +622,45 @@ void dumpProcesses(){
     // TODO: Test this to make it clean, also determine how to calculate CPU time
     USLOSS_Console("%d\t%d\t%d\t%s\t%d\t???\t%s\n",
         process.pid, parentPid, process.priority, status, numChildren(&process), process.name);
+  }
+
+  /*
+   * This operation will block the calling process. newStatus is the value used to indicate the
+   * status of the process in the dumpProcesses command. newStatus must be greater than 10; if
+   * it is not, then halt USLOSS with an appropriate error message.
+   * Return values:
+   * -1: if process was zapped while blocked.
+   *  0: otherwise.
+   */
+  int blockMe(int block_status)
+  {
+    // TODO: Write this function
+  }
+
+  /*
+   * This operation returns the time (in microseconds) at which the currently executing process
+   * began its current time slice.
+   */
+  int readCurStartTime(void)
+  {
+    // TODO: Write this function
+  }
+
+  /*
+   * This operation calls the dispatcher if the currently executing process has exceeded its time slice;
+   * otherwise, it simply returns.
+   */
+  void timeSlice(void)
+  {
+    int startTime = readCurStartTime();
+    int curTime = USLOSS_DeviceInput();
+  }
+  
+  /*
+   * Return the CPU time (in milliseconds) used by the current process.
+   */
+  int readtime(void)
+  {
+    // TODO: Write this function
   }
 }
