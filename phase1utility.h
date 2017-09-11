@@ -20,5 +20,7 @@ bool inKernelMode();
 int initProc(procPtr, procPtr, char *, int(*startFunc)(char *), char *, int, int, int);
 void checkMode(char *);
 int numChildren(procPtr);
+void enableInterrupts();
+void disableInterrupts();
 
 #endif

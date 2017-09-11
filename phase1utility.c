@@ -4,7 +4,7 @@
 
    University of Arizona
    Computer Science 452
-   Fall 2015
+   Fall 2017
 
    ------------------------------------------------------------------------ */
 
@@ -181,12 +181,78 @@ void checkMode(char * funcName)
  */
 int numChildren(procPtr process)
 {
-  int numChildren = 0;
-  procPtr currentChildPtr = process->childProcPtr;
-  while(currentChildPtr != NULL)
-  {
-    numChildren++;
-    currentChildPtr = currentChildPtr->nextProcPtr;
-  }
-  return numChildren;
+    int numChildren = 0;
+    procPtr currentChildPtr = process->childProcPtr;
+    while(currentChildPtr != NULL)
+    {
+        numChildren++;
+        currentChildPtr = currentChildPtr->nextProcPtr;
+    }
+    return numChildren;
 }
+
+/*
+ * Disables interrupts.
+ */
+void disableInterrupts()
+{
+    // check for kernel mode
+    checkMode("disableInterrupts");
+
+    // get the current value of the psr
+    unsigned int psr = USLOSS_PsrGet();
+
+    // the current interrupt bit of the psr
+    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
+
+    // set the prev interrupt bit to zero
+    psr = psr & ~USLOSS_PSR_PREV_INT;
+
+    // move the current interrupt bit to the prev interrupt bit
+    psr = psr | (currentInterrupt << 2);
+
+    // set the current interrupt bit to 0
+    psr = psr & ~USLOSS_PSR_CURRENT_INT;
+
+    /*
+    // if USLOSS gives an error, we've done something wrong!
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    }
+    */
+} /* disableInterrupts */
+
+/*
+ * Enables interrupts.
+ */
+void enableInterrupts()
+{
+    // check for interrupts
+    checkMode("enableInterrupts");
+
+    // get the current value of the psr
+    unsigned int psr = USLOSS_PsrGet();
+
+    // the current interrupt bit of the psr
+    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
+
+    // set the prev interrupt bit to zero
+    psr = psr & ~USLOSS_PSR_PREV_INT;
+
+    // move the current interrupt bit to the prev interrupt bit
+    psr = psr | (currentInterrupt << 2);
+
+    // set the current interrupt bit to 1
+    psr = psr | USLOSS_PSR_CURRENT_INT;
+
+    /*
+    // if USLOSS gives an error, we've done something wrong!
+    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
+    {
+        if (DEBUG && debugflag)
+            USLOSS_Console("launch(): Bug in interrupt set.");
+    }
+    */
+} /* enableInterrupts */

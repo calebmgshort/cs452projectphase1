@@ -22,8 +22,6 @@ void launch();
 int sentinel (char *);
 extern int start1 (char *);
 static void checkDeadlock();
-void disableInterrupts();
-void enableInterrupts();
 
 /* -------------------------- Globals ------------------------------------- */
 
@@ -579,73 +577,6 @@ int sentinel (char *dummy)
 static void checkDeadlock()
 {
 } /* checkDeadlock */
-
-
-/*
- * Disables the interrupts.
- */
-void disableInterrupts()
-{
-    // check for kernel mode
-    checkMode("disableInterrupts");
-
-    // get the current value of the psr
-    unsigned int psr = USLOSS_PsrGet();
-
-    // the current interrupt bit of the psr
-    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
-
-    // set the prev interrupt bit to zero
-    psr = psr & ~USLOSS_PSR_PREV_INT;
-
-    // move the current interrupt bit to the prev interrupt bit
-    psr = psr | (currentInterrupt << 2);
-
-    // set the current interrupt bit to 0
-    psr = psr & ~USLOSS_PSR_CURRENT_INT;
-
-    /*
-    // if USLOSS gives an error, we've done something wrong!
-    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
-    {
-        if (DEBUG && debugflag)
-            USLOSS_Console("launch(): Bug in interrupt set.");
-    }
-    */
-} /* disableInterrupts */
-
-/*
- * Enables the interrupts.
- */
-void enableInterrupts()
-{
-    // check for interrupts
-    checkMode("enableInterrupts");
-
-    // get the current value of the psr
-    unsigned int psr = USLOSS_PsrGet();
-
-    // the current interrupt bit of the psr
-    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
-
-    // set the prev interrupt bit to zero
-    psr = psr & ~USLOSS_PSR_PREV_INT;
-
-    // move the current interrupt bit to the prev interrupt bit
-    psr = psr | (currentInterrupt << 2);
-
-    // set the current interrupt bit to 1
-    psr = psr | USLOSS_PSR_CURRENT_INT;
-
-    /*
-    // if USLOSS gives an error, we've done something wrong!
-    if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
-    {
-        if (DEBUG && debugflag)
-            USLOSS_Console("launch(): Bug in interrupt set.");
-    }
-    */
-} /* enableInterrupts */
 
 /*
  * Returns the pid of the calling process
