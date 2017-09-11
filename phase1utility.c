@@ -71,7 +71,7 @@ int pidToSlot(int pid)
  */
 bool processExists(procPtr process)
 {
-    return process->pid != 0 && process->status != STATUS_DEAD
+    return process->pid != 0 && process->status != STATUS_DEAD;
 }
 
 /*
