@@ -25,7 +25,7 @@ void launch();
 int getNextPid()
 {
     int slot = pidToSlot(nextPid);
-    procStruct proc = ProcTable[slot];
+    procPtr proc = &ProcTable[slot];
 
     if (!processExists(proc))
     {
@@ -35,7 +35,7 @@ int getNextPid()
     // slot is taken, use linear probing to search for an open slot
     for (int i = 0; i < MAXPROC; i++)
     {
-        proc = ProcTable[(slot + i) % MAXPROC];
+        proc = &ProcTable[(slot + i) % MAXPROC];
         if (!processExists(proc))
         {
             return ((slot + i) % MAXPROC); // same as above
@@ -55,9 +55,9 @@ int pidToSlot(int pid)
     return (pid) % MAXPROC;
 }
 
-bool processExists(procStruct process)
+bool processExists(procPtr process)
 {
-    if(process.pid == 0)
+    if(process->pid == 0)
     {
         return false;
     }

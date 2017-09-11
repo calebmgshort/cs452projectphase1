@@ -421,7 +421,7 @@ void quit(int status)
    ------------------------------------------------------------------------ */
 int zap(int pid)
 {
-    procStruct processBeingZapped = ProcTable[pidToSlot(pid)];
+    procPtr processBeingZapped = &ProcTable[pidToSlot(pid)];
     if(pid < 0)
     {
         USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
@@ -432,26 +432,26 @@ int zap(int pid)
         USLOSS_Console("zap failed because the given process does not exist\n");
         USLOSS_Halt(1);
     }
-    else if(processBeingZapped.pid == Current->pid)
+    else if(processBeingZapped == Current)
     {
         USLOSS_Console("zap failed because the given process to zap is itself\n");
         USLOSS_Halt(1);
     }
-    else if(processBeingZapped.status == STATUS_QUIT)
+    else if(processBeingZapped->status == STATUS_QUIT)
     {
         USLOSS_Console("zap failed because the given process has already quit\n");
         USLOSS_Halt(1);
     }
 
     // Add the current process to the list of processes that zapped the given process
-    processBeingZapped.status = STATUS_ZAPPED;
-    if(processBeingZapped.procThatZappedMe != NULL)
+    processBeingZapped->status = STATUS_ZAPPED;
+    if(processBeingZapped->procThatZappedMe != NULL)
     {
-        processBeingZapped.procThatZappedMe = Current;
+        processBeingZapped->procThatZappedMe = Current;
     }
     else
     {
-        procPtr procThatZapped = processBeingZapped.procThatZappedMe;
+        procPtr procThatZapped = processBeingZapped->procThatZappedMe;
         while(procThatZapped->nextSiblingThatZapped != NULL)
         {
             procThatZapped = procThatZapped->nextSiblingThatZapped;
@@ -461,7 +461,7 @@ int zap(int pid)
 
     Current->status = STATUS_BLOCKED;
 
-    while(ProcTable[pid].status != STATUS_QUIT)
+    while(ProcTable[pidToSlot(pid)].status != STATUS_QUIT)
     {
         if(Current->status == STATUS_ZAPPED)
         {
