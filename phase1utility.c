@@ -175,3 +175,18 @@ void checkMode(char * funcName)
         USLOSS_Halt(1);
     }
 }
+
+/*
+ * Returns the number of children in the given process
+ */
+int numChildren(procStruct process)
+{
+  int numChildren = 0;
+  procPtr currentChildPtr = process.childProcPtr;
+  while(currentChildPtr != NULL)
+  {
+    numChildren++;
+    currentChildPtr = currentChildPtr->nextProcPtr;
+  }
+  return numChildren;
+}

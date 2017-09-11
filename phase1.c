@@ -317,7 +317,8 @@ int join(int *status)
         *status = quitChildPtr->quitStatus;
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
+            USLOSS_Console("Process %d's child %d quit with status %d.\n",
+                Current->pid, quitChildPtr->pid, quitChildPtr->quitStatus);
         }
         return quitChildPtr->pid;
     }
@@ -538,7 +539,8 @@ void dispatcher(void)
     {
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("dispatcher(): Performing context switch from process %d to process %d\n", Current->pid, nextProcess->pid);
+            USLOSS_Console("dispatcher(): Performing context switch from process %d to process %d\n",
+                Current->pid, nextProcess->pid);
         }
         p1_switch(Current->pid, nextProcess->pid);
     }
@@ -644,3 +646,49 @@ void enableInterrupts()
     }
     */
 } /* enableInterrupts */
+
+/*
+ * Returns the pid of the calling process
+ */
+int getpid(){
+  return Current->pid;
+}
+
+/*
+ * Prints process information to the console
+ */
+void dumpProcesses(){
+  USLOSS_Console("PID\tParent PID\tPriority\tProcess Status\tNumber of Children\tCPU Time Consumed\tName\n");
+  int i;
+  for(i = 0; i < 50; i++)
+  {
+    procStruct process = ProcTable[i];
+    if(process.status == STATUS_QUIT){
+      continue;
+    }
+    short parentPid = -1;
+    if(process.parentPtr != NULL)
+    {
+      parentPid = process.parentPtr->pid;
+    }
+    char status[30];
+    switch(process.status)
+    {
+      case(STATUS_BLOCKED):
+        strcpy(status, "STATUS_BLOCKED");
+        break;
+      case(STATUS_BLOCKED_JOIN):
+        strcpy(status, "STATUS_BLOCKED_JOIN");
+        break;
+      case(STATUS_READY):
+        strcpy(status, "STATUS_READY");
+        break;
+      case(STATUS_ZAPPED):
+        strcpy(status, "STATUS_ZAPPED");
+        break;
+    }
+    // TODO: Test this to make it clean, also determine how to calculate CPU time
+    USLOSS_Console("%d\t%d\t%d\t%s\t%d\t???\t%s\n",
+        process.pid, parentPid, process.priority, status, numChildren(process), process.name);
+  }
+}
