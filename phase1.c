@@ -317,7 +317,7 @@ int join(int *status)
     // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
     Current->quitChildPtr->status = STATUS_DEAD;
-    *status = Current->quitChildPtr->quitStatus
+    *status = Current->quitChildPtr->quitStatus;
     int quitPid = Current->quitChildPtr->pid;
     Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
     if (DEBUG && debugflag)
@@ -541,8 +541,16 @@ void dispatcher(void)
     }
     Current = nextProcess;
     USLOSS_ContextSwitch(old, new);
-} /* dispatcher */
 
+    // Update the running start time for the new Current
+    int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 1, &(Current->startTime));
+
+    if (result == USLOSS_DEV_INVALID)
+    {
+        USLOSS_Console("dispatcher(): Bug in time get code.\n");
+        USLOSS_Halt(1);
+    }
+} /* dispatcher */
 
 /* ------------------------------------------------------------------------
    Name - sentinel
@@ -650,12 +658,23 @@ void dumpProcesses()
    * This operation calls the dispatcher if the currently executing process has exceeded its time slice;
    * otherwise, it simply returns.
    */
-  void timeSlice(void)
-  {
-    int startTime = readCurStartTime();
-    int curTime = USLOSS_DeviceInput();
-  }
-  
+   void timeSlice()
+   {
+       int currentTime;
+       int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 1, &currentTime);
+       if (result == USLOSS_DEV_INVALID)
+       {
+           USLOSS_Console("timeSlice(): Bug in time get code.\n");
+           USLOSS_Halt(1);
+       }
+
+       if (currentTime - Current->startTime > MAX_TIME_SLICE)
+       {
+           dispatcher();
+       }
+       return;
+   }
+
   /*
    * Return the CPU time (in milliseconds) used by the current process.
    */

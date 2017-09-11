@@ -33,6 +33,7 @@ struct procStruct
     unsigned int    stackSize;
     int             status;                  // the current status of this proc (blocked, ready, etc)
     int             quitStatus;              // the exit status of this proc, if it has already quit
+    int             startTime;               // The time at which this process last started executing.
 };
 
 struct psrBits
@@ -56,6 +57,7 @@ union psrValues
 #define MAXPRIORITY 1
 #define SENTINELPID 1
 #define SENTINELPRIORITY (MINPRIORITY + 1)
+#define MAX_TIME_SLICE 80000
 
 // Status codes
 #define STATUS_READY 0         // Should be on the ready list.

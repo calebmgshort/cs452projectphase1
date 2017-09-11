@@ -19,30 +19,41 @@ void launch();
 
 /*
  * Helper for fork1() that calculates the pid for the next process.
- *
- * TODO clear out dead processes when space is needed.
  */
 int getNextPid()
 {
-    int slot = pidToSlot(nextPid);
-    procPtr proc = &ProcTable[slot];
+    int baseSlot = pidToSlot(nextPid);
+    procPtr proc;
+    int slot;
 
-    if (!processExists(proc))
-    {
-        return slot; // this slot was never occupied, so this pid is new
-    }
-
-    // slot is taken, use linear probing to search for an open slot
+    // Use linear probing to search for an unused open slot
     for (int i = 0; i < MAXPROC; i++)
     {
-        proc = &ProcTable[(slot + i) % MAXPROC];
-        if (!processExists(proc))
+        slot = (baseSlot + i) % MAXPROC;
+        proc = &ProcTable[slot];
+        if (proc->pid == 0)
         {
-            return ((slot + i) % MAXPROC); // same as above
+            // this slot was never occupied, so this pid is new
+            if (slot == 0)
+            {
+                return MAXPROC;
+            }
+            return slot;
         }
+
     }
 
-    // TODO search for dead processes to remove
+    // Search for dead processes to remove
+    for (int i = 0; i < MAXPROC; i++)
+    {
+        slot = (baseSlot + i) % MAXPROC;
+        proc = &ProcTable[slot];
+        if (proc->status == STATUS_DEAD)
+        {
+            // return the next pid that will hash to the same spot.
+            return proc->pid + MAXPROC;
+        }
+    }
 
     return -1; // no space left in the table
 }
@@ -52,21 +63,20 @@ int getNextPid()
  */
 int pidToSlot(int pid)
 {
-    return (pid) % MAXPROC;
+    return pid % MAXPROC;
 }
 
+/*
+ * Returns true iff process points to a used slot in the Process Table.
+ */
 bool processExists(procPtr process)
 {
-    if(process->pid == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    return process->pid != 0 && process->status != STATUS_DEAD;
 }
 
+/*
+ * Returns true iff we are currently in kernel mode.
+ */
 bool inKernelMode()
 {
     return (USLOSS_PsrGet() & USLOSS_PSR_CURRENT_MODE) > 0;
