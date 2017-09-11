@@ -459,7 +459,7 @@ int zap(int pid)
         procThatZapped->nextSiblingThatZapped = Current;
     }
 
-    Current->status = STATUS_BLOCKED;
+    Current->status = STATUS_BLOCKED_ZAP;
 
     while(ProcTable[pidToSlot(pid)].status != STATUS_QUIT)
     {
@@ -674,8 +674,8 @@ void dumpProcesses(){
     char status[30];
     switch(process.status)
     {
-      case(STATUS_BLOCKED):
-        strcpy(status, "STATUS_BLOCKED");
+      case(STATUS_BLOCKED_ZAP):
+        strcpy(status, "STATUS_BLOCKED_ZAP");
         break;
       case(STATUS_BLOCKED_JOIN):
         strcpy(status, "STATUS_BLOCKED_JOIN");

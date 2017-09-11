@@ -29,7 +29,7 @@ struct procStruct
     short           pid;                     // process id
     int             priority;                // process priority
     int (* startFunc) (char *);              // function where this process begins
-    char           *stack;
+    char           *stack;                   // call stack for this process
     unsigned int    stackSize;
     int             status;                  // the current status of this proc (blocked, ready, etc)
     int             quitStatus;              // the exit status of this proc, if it has already quit
@@ -59,7 +59,7 @@ union psrValues
 
 // Status codes
 #define STATUS_READY 0         // Should be on the ready list.
-#define STATUS_BLOCKED 1       // Blocked because this is zapping another process. TODO rename
+#define STATUS_BLOCKED_ZAP 1   // Blocked because this is zapping another process.
 #define STATUS_QUIT 2          // This process has quit.
 #define STATUS_ZAPPED 3        // This process has been zapped. It should quit eventually.
 #define STATUS_BLOCKED_JOIN 4  // Blocked waiting for a child to quit.
