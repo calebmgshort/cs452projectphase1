@@ -421,6 +421,7 @@ void dispatcher(void)
     USLOSS_ContextSwitch(old, new);
 
     // Update the running start time for the new Current
+    Current->startTime = getCurrentTime();
     int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 0, &(Current->startTime));
 
     if (result == USLOSS_DEV_INVALID)

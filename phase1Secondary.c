@@ -29,8 +29,7 @@ int blockMe(int block_status)
  */
 int readCurStartTime(void)
 {
-  return -1;
-  // TODO: Write this function
+  return Current->startTime;
 }
 
 /*
@@ -39,13 +38,7 @@ int readCurStartTime(void)
  */
  void timeSlice()
  {
-     int currentTime;
-     int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 1, &currentTime);
-     if (result == USLOSS_DEV_INVALID)
-     {
-         USLOSS_Console("timeSlice(): Bug in time get code.\n");
-         USLOSS_Halt(1);
-     }
+     int currentTime = getCurrentTime();
 
      if (currentTime - Current->startTime > MAX_TIME_SLICE)
      {

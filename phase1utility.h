@@ -27,5 +27,6 @@ void addProcessToProcessChildList(procPtr, procPtr);
 void addProcessToProcessQuitChildLIst(procPtr, procPtr);
 void addProcessToZappedProcessList(procPtr, procPtr);
 void unblockProcessesThatZappedThisProcess(procPtr);
+int getCurrentTime();
 
 #endif
