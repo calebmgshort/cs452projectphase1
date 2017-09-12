@@ -125,7 +125,6 @@ void dumpProcesses()
         strcpy(status, "STATUS_ZAPPED");
         break;
     }
-    // TODO: Test this to make it clean, also determine how to calculate CPU time
     USLOSS_Console("%d\t%d\t%d\t%s\t%d\t%d\t%s\n",
         process.pid, parentPid, process.priority, status, numChildren(&process), Current->runningTime, process.name);
   }
