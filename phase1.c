@@ -291,6 +291,12 @@ int join(int *status)
 
         // Proceed like case 2 from here on
     }
+
+    // Handle the case where the process was zapped while waiting for a child to quit
+    if(Current->status == STATUS_ZAPPED){
+      return -1;
+    }
+
     // case 2: At least 1 quit child waiting to be joined
 
     procPtr quitChildPtr = Current->quitChildPtr;
@@ -300,8 +306,6 @@ int join(int *status)
         USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
         USLOSS_Halt(1);
     }
-
-    // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
     // Set child pointer status to dead
     quitChildPtr->status = STATUS_DEAD;
@@ -379,7 +383,7 @@ void dispatcher(void)
     // Add the runnning time (in ms) to the last process
     Current->runningTime += (getCurrentTime() - Current->startTime) / 1000;
     // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && Current->status == STATUS_READY) // TODO any other statuses?
+    if (Current != NULL && Current->status == STATUS_READY)
     {
         if (DEBUG && debugflag)
         {
