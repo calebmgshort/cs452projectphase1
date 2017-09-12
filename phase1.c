@@ -354,7 +354,7 @@ void quit(int status)
     procPtr parentPtr = Current->parentPtr;
     if (parentPtr != NULL)
     {
-        addProcessToProcessQuitChildLIst(parentPtr, Current);
+        addQuitChild(parentPtr, Current);
         // Set the parent's status to ready and add it to the process table
         if(parentPtr->status == STATUS_BLOCKED_JOIN)
         {

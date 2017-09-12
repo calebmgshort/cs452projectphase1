@@ -24,8 +24,8 @@ int numChildren(procPtr);
 void enableInterrupts();
 void disableInterrupts();
 void addChild(procPtr, procPtr);
-void addProcessToProcessQuitChildLIst(procPtr, procPtr);
-void addProcessToZappedProcessList(procPtr, procPtr);
+void addQuitChild(procPtr, procPtr);
+void addZappedProcess(procPtr, procPtr);
 void unblockProcessesThatZappedThisProcess(procPtr);
 int getCurrentTime();
 

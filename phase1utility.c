@@ -296,7 +296,7 @@ void addChild(procPtr child, procPtr parent)
  /*
   * Used by quit to add a child to the given process's quit child list
   */
- void addProcessToProcessQuitChildLIst(procPtr parent, procPtr child)
+ void addQuitChild(procPtr parent, procPtr child)
  {
    if(parent->quitChildPtr == NULL)
    {
@@ -318,7 +318,7 @@ void addChild(procPtr child, procPtr parent)
  * Used by zap to add the zapping process to the list of processes that zapped
  * the zapped process
  */
-void addProcessToZappedProcessList(procPtr processZapping, procPtr processBeingZapped)
+void addZappedProcess(procPtr processZapping, procPtr processBeingZapped)
 {
   processBeingZapped->status = STATUS_ZAPPED;
   if(processBeingZapped->procThatZappedMe != NULL)

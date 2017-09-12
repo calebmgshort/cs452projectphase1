@@ -175,7 +175,7 @@ int zap(int pid)
     processBeingZapped->status = STATUS_ZAPPED;
 
     // Add the current process to the list of processes that zapped the given process
-    addProcessToZappedProcessList(Current, processBeingZapped);
+    addZappedProcess(Current, processBeingZapped);
 
     // Change the status of the process that is zapping
     Current->status = STATUS_BLOCKED_ZAP;
