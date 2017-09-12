@@ -170,6 +170,7 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     // fill out the rest of the fields
     proc->pid = pid;
     proc->status = STATUS_READY;
+    proc->runningTime = 0;
 
     return 0;
 }

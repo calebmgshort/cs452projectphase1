@@ -33,7 +33,8 @@ struct procStruct
     unsigned int    stackSize;
     int             status;                  // the current status of this proc (blocked, ready, etc)
     int             quitStatus;              // the exit status of this proc, if it has already quit
-    int             startTime;               // The time at which this process last started executing.
+    int             startTime;               // The time at which this process last started executing (microseconds).
+    int             runningTime;             // The amount of time this process has run (milliseconds)
 };
 
 struct psrBits

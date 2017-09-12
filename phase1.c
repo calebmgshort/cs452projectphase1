@@ -376,6 +376,8 @@ void quit(int status)
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
+    // Add the runnning time (in ms) to the last process
+    Current->runningTime += (getCurrentTime() - Current->startTime) / 1000;
     // Put the old process back on the ready list, if appropriate.
     if (Current != NULL && Current->status == STATUS_READY) // TODO any other statuses?
     {

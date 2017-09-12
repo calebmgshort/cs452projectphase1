@@ -52,8 +52,7 @@ int readCurStartTime(void)
  */
 int readtime(void)
 {
-  return -1;
-  // TODO: Write this function
+  return Current->runningTime;
 }
 
 /*
@@ -63,7 +62,7 @@ int readtime(void)
  */
 void dumpProcesses()
 {
-  USLOSS_Console("PID\tParent PID\tPriority\tProcess Status\tNumber of Children\tCPU Time Consumed\tName\n");
+  USLOSS_Console("PID\tParent PID\tPriority\tProcess Status\tNumber of Children\tCPU Time Consumed (ms)\tName\n");
   int i;
   for(i = 0; i < 50; i++)
   {
@@ -93,8 +92,8 @@ void dumpProcesses()
         break;
     }
     // TODO: Test this to make it clean, also determine how to calculate CPU time
-    USLOSS_Console("%d\t%d\t%d\t%s\t%d\t???\t%s\n",
-        process.pid, parentPid, process.priority, status, numChildren(&process), process.name);
+    USLOSS_Console("%d\t%d\t%d\t%s\t%d\t%d\t%s\n",
+        process.pid, parentPid, process.priority, status, numChildren(&process), Current->runningTime, process.name);
   }
 }
 
