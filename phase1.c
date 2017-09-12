@@ -11,6 +11,8 @@
 #include "kernel.h"
 #include "phase1utility.h"
 #include "queue.h"
+#include "interrupt.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -71,7 +73,7 @@ void startup(int argc, char *argv[])
     initPriorityQueue(&ReadyList);
 
     // Initialize the clock interrupt handler
-    // USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
+    USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
 
     // startup a sentinel process
     if (DEBUG && debugflag)
@@ -320,6 +322,9 @@ int join(int *status)
     *status = Current->quitChildPtr->quitStatus;
     int quitPid = Current->quitChildPtr->pid;
     Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+
+    // TODO: Remove quit child from child list
+
     if (DEBUG && debugflag)
     {
         USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitPid, *status);
@@ -463,7 +468,7 @@ void dispatcher(void)
     USLOSS_ContextSwitch(old, new);
 
     // Update the running start time for the new Current
-    int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 1, &(Current->startTime));
+    int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 0, &(Current->startTime));
 
     if (result == USLOSS_DEV_INVALID)
     {
@@ -501,5 +506,26 @@ int sentinel (char *dummy)
 /* check to determine if deadlock has occurred... */
 static void checkDeadlock()
 {
+    for (int slot = 0; slot < MAXPROC; slot++)
+    {
+        // These are always sentinel and start1
+        if (slot == 1 || slot == 2)
+        {
+            continue;
+        }
+        procPtr proc = &ProcTable[slot];
+        if (processExists(proc))
+        {
+            // The sentinel is called even though other procs exist.
+            // There must be a deadlock
+            if (DEBUG && debugflag)
+            {
+                USLOSS_Console("checkDeadlock(): Found processes that are not sentinel or start1.  Halting...\n");
+            }
+            USLOSS_Halt(1);
+        }
+    }
+    // Currently, there is no reason not to halt here
+    USLOSS_Halt(0);
 } /* checkDeadlock */
 

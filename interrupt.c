@@ -3,7 +3,7 @@
 /*
  * Interrupt handler for the clock device.
  */
-void clockHandler(int interruptType, int deviceNumber)
+void clockHandler(int interruptType, void *arg)
 {
     timeSlice();
 }
