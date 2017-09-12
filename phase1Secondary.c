@@ -7,7 +7,7 @@
 
 extern procPtr Current;
 extern procStruct ProcTable[];
-
+extern priorityQueue ReadyList;
 
 /*
  * This operation will block the calling process. newStatus is the value used to indicate the
@@ -19,8 +19,42 @@ extern procStruct ProcTable[];
  */
 int blockMe(int block_status)
 {
-  return -1;
-  // TODO: Write this function
+    if(block_status <= 10)
+    {
+        USLOSS_Console("Error. blockMe received an order to block a process with status < 10");
+        USLOSS_Halt(1);
+    }
+    if(Current->status == STATUS_ZAPPED)
+        return -1;
+    Current->status = block_status;
+    return 0;
+}
+
+/*
+ * This operation unblocks process pid that had previously blocked itself by calling blockMe.
+ * The status of that process is changed to READY, and it is put on the Ready List. The dispatcher
+ * will be called as a side-effect of this function.
+ * Return values:
+ * -2: if the indicated process was not blocked, does not exist, is the current process, or is
+ * blocked on a status less than or equal to 10. Thus, a process that is zap-blocked or
+ * join-blocked cannot be unblocked with this function call.
+ * -1: if the calling process was zapped. 0: otherwise.
+ */
+int unblockProc(int pid)
+{
+    //  Make sure everything is valid
+    procPtr process = &ProcTable[pidToSlot(pid)];
+    if(!processExists(process) || process->pid == Current->pid || process->status <= 10)
+        return -2;
+    if(Current->status == STATUS_ZAPPED)
+        return -1;
+    // Set the process's status to ready
+    process->status = STATUS_READY;
+    // Add the process to the readly list
+    addProc(&ReadyList, process);
+    // Call the dispatcher
+    dispatcher();
+    return 0;
 }
 
 /*
@@ -29,7 +63,7 @@ int blockMe(int block_status)
  */
 int readCurStartTime(void)
 {
-  return Current->startTime;
+    return Current->startTime;
 }
 
 /*
@@ -52,7 +86,7 @@ int readCurStartTime(void)
  */
 int readtime(void)
 {
-  return Current->runningTime;
+    return Current->runningTime;
 }
 
 /*
@@ -102,7 +136,7 @@ void dumpProcesses()
  */
 int getpid()
 {
-  return Current->pid;
+    return Current->pid;
 }
 
 
