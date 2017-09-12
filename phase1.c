@@ -188,8 +188,8 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     int procSlot = pidToSlot(pid);
     procPtr proc = &ProcTable[procSlot];
 
-    // fill out Current's children pointers
-    addProcessToProcessChildList(proc, Current);
+    // Add the new proc to Current's child list
+    addChild(proc, Current);
 
     // Initialize proc's fields.
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)

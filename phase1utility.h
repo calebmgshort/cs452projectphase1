@@ -23,7 +23,7 @@ void checkMode(char *);
 int numChildren(procPtr);
 void enableInterrupts();
 void disableInterrupts();
-void addProcessToProcessChildList(procPtr, procPtr);
+void addChild(procPtr, procPtr);
 void addProcessToProcessQuitChildLIst(procPtr, procPtr);
 void addProcessToZappedProcessList(procPtr, procPtr);
 void unblockProcessesThatZappedThisProcess(procPtr);

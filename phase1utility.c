@@ -272,26 +272,26 @@ void enableInterrupts()
 /*
  * Used by fork1 to add a child to the given process's child list
  */
- void addProcessToProcessChildList(procPtr child, procPtr parent)
- {
-   if (parent != NULL)
-   {
-       if (parent->childProcPtr == NULL)
-       {
-           parent->childProcPtr = child;
-       }
-       else
-       {
-           // Current has children, look for youngest older sibling
-           procPtr olderSib = parent->childProcPtr;
-           while (olderSib->nextSiblingPtr != NULL)
-           {
-               olderSib = olderSib->nextSiblingPtr;
-           }
-           olderSib->nextSiblingPtr = child;
-       }
-   }
- }
+void addChild(procPtr child, procPtr parent)
+{
+    if (parent != NULL)
+    {
+        if (parent->childProcPtr == NULL)
+        {
+            parent->childProcPtr = child;
+        }
+        else
+        {
+            // Current has children, look for youngest older sibling
+            procPtr olderSib = parent->childProcPtr;
+            while (olderSib->nextSiblingPtr != NULL)
+            {
+                olderSib = olderSib->nextSiblingPtr;
+            }
+            olderSib->nextSiblingPtr = child;
+        }
+    }
+}
 
  /*
   * Used by quit to add a child to the given process's quit child list
