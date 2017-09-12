@@ -293,33 +293,35 @@ int join(int *status)
     }
 
     // Handle the case where the process was zapped while waiting for a child to quit
-    if(Current->status == STATUS_ZAPPED){
-      return -1;
+    if (Current->status == STATUS_ZAPPED)
+    {
+        return -1;
     }
 
     // case 2: At least 1 quit child waiting to be joined
 
-    procPtr quitChildPtr = Current->quitChildPtr;
-    // quitChildPtr should not be NULL at this point!
-    if(quitChildPtr == NULL)
+    // Current->quitChildPtr should not be NULL at this point!
+    if (Current->quitChildPtr == NULL)
     {
-        USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
+        USLOSS_Console("quit(): Process %d has no quit children, when it absolutely must.\n", Current->pid);
         USLOSS_Halt(1);
     }
 
-    // Set child pointer status to dead
-    quitChildPtr->status = STATUS_DEAD;
-    // Update status
-    *status = quitChildPtr->quitStatus;
-    // Get the pid of the child that quit
-    int quitPid = quitChildPtr->pid;
-    // Change the first quit child of this process to the next quit child in the list
-    quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+    // Remove the first quit child from the list.
+    procPtr quitChild = Current->quitChildPtr;
+    Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+
+    // Mark the quit child as dead
+    quitChild->status = STATUS_DEAD;
+    // TODO: Remove quit child from child list
+
+    // Extract info from quit child
+    *status = quitChild->quitStatus;
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitPid, *status);
+        USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChild->pid, *status);
     }
-    return quitPid;
+    return quitChild->pid;
 } /* join */
 
 
