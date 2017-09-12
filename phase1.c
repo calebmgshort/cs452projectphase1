@@ -32,7 +32,7 @@ int debugflag = 1;
 procStruct ProcTable[MAXPROC];
 
 // Process lists
-static priorityQueue ReadyList;
+priorityQueue ReadyList;
 
 // current process ID
 procPtr Current = NULL;
@@ -187,23 +187,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     procPtr proc = &ProcTable[procSlot];
 
     // fill out Current's children pointers
-    if (Current != NULL)
-    {
-        if (Current->childProcPtr == NULL)
-        {
-            Current->childProcPtr = proc;
-        }
-        else
-        {
-            // Current has children, look for youngest older sibling
-            procPtr olderSib = Current->childProcPtr;
-            while (olderSib->nextSiblingPtr != NULL)
-            {
-                olderSib = olderSib->nextSiblingPtr;
-            }
-            olderSib->nextSiblingPtr = proc;
-        }
-    }
+    addProcessToProcessChildList(proc, Current);
 
     // Initialize proc's fields.
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
@@ -307,8 +291,9 @@ int join(int *status)
     }
     // case 2: At least 1 quit child waiting to be joined
 
-    // Current->quitChildPtr should not be NULL at this point!
-    if(Current->quitChildPtr == NULL)
+    procPtr quitChildPtr = Current->quitChildPtr;
+    // quitChildPtr should not be NULL at this point!
+    if(quitChildPtr == NULL)
     {
         USLOSS_Console("Error. Process %d has no quit children, when it absolutely must.\n", Current->pid);
         USLOSS_Halt(1);
@@ -316,10 +301,14 @@ int join(int *status)
 
     // TODO: Handle the case where the process was zappd while waiting for a child to quit
 
-    Current->quitChildPtr->status = STATUS_DEAD;
-    *status = Current->quitChildPtr->quitStatus;
-    int quitPid = Current->quitChildPtr->pid;
-    Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
+    // Set child pointer status to dead
+    quitChildPtr->status = STATUS_DEAD;
+    // Update status
+    *status = quitChildPtr->quitStatus;
+    // Get the pid of the child that quit
+    int quitPid = quitChildPtr->pid;
+    // Change the first quit child of this process to the next quit child in the list
+    quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
     if (DEBUG && debugflag)
     {
         USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitPid, *status);
@@ -350,26 +339,15 @@ void quit(int status)
         }
         childPtr = childPtr->nextSiblingPtr;
     }
+    // Set current's status to quit
     Current->status = STATUS_QUIT;
     Current->quitStatus = status;
     // Notify parent that this process has quit
     procPtr parentPtr = Current->parentPtr;
     if (parentPtr != NULL)
     {
-        if(parentPtr->quitChildPtr == NULL)
-        {
-            parentPtr->quitChildPtr = Current;
-        }
-        else
-        {
-            procPtr quitChildPtr = parentPtr->quitChildPtr;
-            // add Current to nextQuitSiblingPtr list
-            while(quitChildPtr->nextQuitSiblingPtr != NULL)
-            {
-                quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
-            }
-            quitChildPtr->nextQuitSiblingPtr = Current;
-        }
+        addProcessToProcessQuitChildLIst(parentPtr, Current);
+        // Set the parent's status to ready and add it to the process table
         if(parentPtr->status == STATUS_BLOCKED_JOIN)
         {
             parentPtr->status = STATUS_READY;
@@ -378,34 +356,12 @@ void quit(int status)
     }
 
     // Unblock the processes that zapped this process
-    if(Current->procThatZappedMe != NULL)
-    {
-        procPtr procThatZappedMe = Current->procThatZappedMe;
-        // Set each of these processes to ready
-        while(procThatZappedMe != NULL)
-        {
-            procThatZappedMe->status = STATUS_READY;
-            addProc(&ReadyList, procThatZappedMe);
-            procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-        }
-        // Remove the pointer to nextSiblingThatZapped for each
-        procThatZappedMe = Current->procThatZappedMe;
-        procPtr last = procThatZappedMe;
-        procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-        while(procThatZappedMe != NULL)
-        {
-            last->nextSiblingThatZapped = NULL;
-            last = procThatZappedMe;
-            procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
-        }
-        // Remove the pointer to procThatZappedMe
-        Current->procThatZappedMe = NULL;
-    }
+    unblockProcessesThatZappedThisProcess(Current);
 
     p1_quit(Current->pid);
     dispatcher();
 } /* quit */
- 
+
 /* ------------------------------------------------------------------------
    Name - dispatcher
    Purpose - dispatches ready processes.  The process with the highest
@@ -502,4 +458,3 @@ int sentinel (char *dummy)
 static void checkDeadlock()
 {
 } /* checkDeadlock */
-

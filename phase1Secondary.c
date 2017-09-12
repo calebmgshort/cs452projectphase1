@@ -75,7 +75,7 @@ void dumpProcesses()
   for(i = 0; i < 50; i++)
   {
     procStruct process = ProcTable[i];
-    if(process.status == STATUS_QUIT){
+    if(process.status == STATUS_QUIT || process.status == STATUS_DEAD){
       continue;
     }
     short parentPid = -1;
@@ -146,25 +146,16 @@ int zap(int pid)
         USLOSS_Halt(1);
     }
 
-    // Add the current process to the list of processes that zapped the given process
+    // Change the status of the process being zapped
     processBeingZapped->status = STATUS_ZAPPED;
-    if(processBeingZapped->procThatZappedMe != NULL)
-    {
-        processBeingZapped->procThatZappedMe = Current;
-    }
-    else
-    {
-        procPtr procThatZapped = processBeingZapped->procThatZappedMe;
-        while(procThatZapped->nextSiblingThatZapped != NULL)
-        {
-            procThatZapped = procThatZapped->nextSiblingThatZapped;
-        }
-        procThatZapped->nextSiblingThatZapped = Current;
-    }
 
+    // Add the current process to the list of processes that zapped the given process
+    addProcessToZappedProcessList(Current, processBeingZapped);
+
+    // Change the status of the process that is zapping
     Current->status = STATUS_BLOCKED_ZAP;
 
-    while(ProcTable[pidToSlot(pid)].status != STATUS_QUIT)
+    while(processBeingZapped->status != STATUS_QUIT)
     {
         if(Current->status == STATUS_ZAPPED)
         {

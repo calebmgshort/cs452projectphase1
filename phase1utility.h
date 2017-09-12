@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <usloss.h>
+#include <queue.h>
 
 int getNextPid();
 int pidToSlot(int);
@@ -22,5 +23,9 @@ void checkMode(char *);
 int numChildren(procPtr);
 void enableInterrupts();
 void disableInterrupts();
+void addProcessToProcessChildList(procPtr, procPtr);
+void addProcessToProcessQuitChildLIst(procPtr, procPtr);
+void addProcessToZappedProcessList(procPtr, procPtr);
+void unblockProcessesThatZappedThisProcess(procPtr);
 
 #endif

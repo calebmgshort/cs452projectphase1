@@ -13,6 +13,7 @@
 extern unsigned int nextPid;
 extern procStruct ProcTable[];
 extern int debugflag;
+extern priorityQueue ReadyList;
 
 void launch();
 
@@ -266,3 +267,97 @@ void enableInterrupts()
     }
     */
 } /* enableInterrupts */
+
+/*
+ * Used by fork1 to add a child to the given process's child list
+ */
+ void addProcessToProcessChildList(procPtr child, procPtr parent)
+ {
+   if (parent != NULL)
+   {
+       if (parent->childProcPtr == NULL)
+       {
+           parent->childProcPtr = child;
+       }
+       else
+       {
+           // Current has children, look for youngest older sibling
+           procPtr olderSib = parent->childProcPtr;
+           while (olderSib->nextSiblingPtr != NULL)
+           {
+               olderSib = olderSib->nextSiblingPtr;
+           }
+           olderSib->nextSiblingPtr = child;
+       }
+   }
+ }
+
+ /*
+  * Used by quit to add a child to the given process's quit child list
+  */
+ void addProcessToProcessQuitChildLIst(procPtr parent, procPtr child)
+ {
+   if(parent->quitChildPtr == NULL)
+   {
+       parent->quitChildPtr = child;
+   }
+   else
+   {
+       procPtr quitChildPtr = parent->quitChildPtr;
+       // add Current to nextQuitSiblingPtr list
+       while(quitChildPtr->nextQuitSiblingPtr != NULL)
+       {
+           quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+       }
+       quitChildPtr->nextQuitSiblingPtr = child;
+   }
+ }
+
+/*
+ * Used by zap to add the zapping process to the list of processes that zapped
+ * the zapped process
+ */
+void addProcessToZappedProcessList(procPtr processZapping, procPtr processBeingZapped)
+{
+  processBeingZapped->status = STATUS_ZAPPED;
+  if(processBeingZapped->procThatZappedMe != NULL)
+  {
+      processBeingZapped->procThatZappedMe = processZapping;
+  }
+  else
+  {
+      procPtr procThatZapped = processBeingZapped->procThatZappedMe;
+      while(procThatZapped->nextSiblingThatZapped != NULL)
+      {
+          procThatZapped = procThatZapped->nextSiblingThatZapped;
+      }
+      procThatZapped->nextSiblingThatZapped = processZapping;
+  }
+}
+
+void unblockProcessesThatZappedThisProcess(procPtr process)
+{
+  if(process->procThatZappedMe != NULL)
+  {
+      procPtr procThatZappedMe = process->procThatZappedMe;
+      // Set each of these processes to ready
+      while(procThatZappedMe != NULL)
+      {
+          procThatZappedMe->status = STATUS_READY;
+          addProc(&ReadyList, procThatZappedMe);
+          procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      }
+      // Remove the pointer to nextSiblingThatZapped for each
+      procThatZappedMe = process->procThatZappedMe;
+      procPtr last = procThatZappedMe;
+      procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      while(procThatZappedMe != NULL)
+      {
+          last->nextSiblingThatZapped = NULL;
+          last = procThatZappedMe;
+          procThatZappedMe = procThatZappedMe->nextSiblingThatZapped;
+      }
+      // Remove the pointer to procThatZappedMe
+      process->procThatZappedMe = NULL;
+  }
+}
