@@ -363,15 +363,17 @@ void unblockProcessesThatZappedThisProcess(procPtr process)
   }
 }
 
-// Get the current time in microseconds from USLOSS. Modify the int* provided
+/*
+ * Gets the current time in microseconds from USLOSS.
+ */
 int getCurrentTime()
 {
-  int* timePtr = 0;
-  int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 1, timePtr);
-  if (result == USLOSS_DEV_INVALID)
-  {
-      USLOSS_Console("timeSlice(): Bug in getCurrentTime code.\n");
-      USLOSS_Halt(1);
-  }
-  return *timePtr;
+    int time;
+    int result = USLOSS_DeviceInput(USLOSS_CLOCK_DEV, 0, &time);
+    if (result == USLOSS_DEV_INVALID)
+    {
+        USLOSS_Console("getCurrentTime(): Bug in getCurrentTime code.\n");
+        USLOSS_Halt(1);
+    }
+    return time;
 }

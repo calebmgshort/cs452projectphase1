@@ -381,9 +381,18 @@ void quit(int status)
 void dispatcher(void)
 {
     // Add the runnning time (in ms) to the last process
-    Current->runningTime += (getCurrentTime() - Current->startTime) / 1000;
+    if (Current != NULL)
+    {
+        int deltaTime = (getCurrentTime() - Current->startTime) / 1000;
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("dispatcher(): Adding %d ms to running time for process %d.\n", deltaTime, Current->pid);
+        }
+        Current->runningTime += deltaTime;
+    }
+
     // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && Current->status == STATUS_READY)
+    if (Current != NULL && Current->status == STATUS_READY) // TODO is this the only status?
     {
         if (DEBUG && debugflag)
         {
