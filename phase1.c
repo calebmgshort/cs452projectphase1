@@ -315,7 +315,7 @@ int join(int *status)
     {
         USLOSS_Console("join(): Process %d's child %d quit with status %d.\n", Current->pid, quitChild->pid, *status);
     }
- 
+
     // Mark the quit child as dead
     quitChild->status = STATUS_DEAD;
     if (DEBUG && debugflag)
@@ -348,10 +348,9 @@ void quit(int status)
             USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
             USLOSS_Halt(1);
         }
+        childPtr->status = STATUS_DEAD;
         childPtr = childPtr->nextSiblingPtr;
     }
-
-    // TODO quit children should be dead once Current quits!
 
     // Set current's status to quit
     if (DEBUG && debugflag)
@@ -421,7 +420,7 @@ void dispatcher(void)
     }
 
     // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && Current->status == STATUS_READY) // TODO is this the only status?
+    if (Current != NULL && (Current->status == STATUS_READY || Current->status == STATUS_ZAPPED))
     {
         if (DEBUG && debugflag)
         {
