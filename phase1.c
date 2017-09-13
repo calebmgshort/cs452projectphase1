@@ -58,7 +58,7 @@ void startup(int argc, char *argv[])
     // initialize the process table
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("startup(): initializing process table, ProcTable[]\n");
+        USLOSS_Console("startup(): Initializing process table.\n");
     }
     for (int i = 0; i < MAXPROC; i++)
     {
@@ -68,42 +68,39 @@ void startup(int argc, char *argv[])
     // Initialize the Ready list
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("startup(): initializing the Ready list\n");
+        USLOSS_Console("startup(): Initializing the ready list.\n");
     }
     initPriorityQueue(&ReadyList);
 
     // Initialize the clock interrupt handler
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("startup(): Initializing interrupt handlers.\n");
+    }
     USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
 
     // startup a sentinel process
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("startup(): calling fork1() for sentinel\n");
+        USLOSS_Console("startup(): Calling fork1() for sentinel.\n");
     }
     result = fork1("sentinel", sentinel, NULL, USLOSS_MIN_STACK, SENTINELPRIORITY);
     if (result < 0)
     {
-        if (DEBUG && debugflag)
-        {
-            USLOSS_Console("startup(): fork1 of sentinel returned error.  ");
-            USLOSS_Console("Halting...\n");
-        }
+        USLOSS_Console("startup(): fork1 of sentinel returned error.  Halting...\n");
         USLOSS_Halt(1);
     }
 
     // start the test process
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("startup(): calling fork1() for start1\n");
+        USLOSS_Console("startup(): Calling fork1() for start1.\n");
     }
     result = fork1("start1", start1, NULL, 2 * USLOSS_MIN_STACK, 1);
     if (result < 0)
     {
-        if (DEBUG && debugflag)
-        {
-            USLOSS_Console("startup(): fork1 for start1 returned an error.  ");
-            USLOSS_Console("Halting...\n");
-        }
+        USLOSS_Console("startup(): fork1 for start1 returned an error.  ");
+        USLOSS_Console("Halting...\n");
         USLOSS_Halt(1);
     }
 
@@ -125,7 +122,7 @@ void finish(int argc, char *argv[])
 {
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("in finish...\n");
+        USLOSS_Console("finish(): Called.\n");
     }
 } /* finish */
 
@@ -145,17 +142,13 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
 {
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("fork1(): creating process %s\n", name);
+        USLOSS_Console("fork1(): Creating process %s.\n", name);
     }
 
     // ensure that we are in kernel mode
     checkMode("fork1");
 
     // enable interrupts
-    if (DEBUG && debugflag)
-    {
-        USLOSS_Console("fork1(): enabling interrupts.\n");
-    }
     enableInterrupts();
 
     // Return if stack size is too small
@@ -163,12 +156,12 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     {
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("fork1(): Fork called with stack size < USLOSS_MIN_STACK.\n");
+            USLOSS_Console("fork1(): fork1 called with stack size < USLOSS_MIN_STACK.\n");
         }
         return -2;
     }
 
-    // Is there room in the process table? What is the next PID?
+    // Get the next pid
     int pid = getNextPid();
     if (pid == -1)
     {
@@ -185,17 +178,22 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     }
 
     // Start to fill out entry in the process table.
-    int procSlot = pidToSlot(pid);
-    procPtr proc = &ProcTable[procSlot];
-
-    // Add the new proc to Current's child list
-    addChild(proc, Current);
-
-    // Initialize proc's fields.
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("fork1(): Initializing process table entry.\n");
+    }
+    procPtr proc = &ProcTable[pidToSlot(pid)];
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
         return -1;
     }
+
+    // Add the new proc to Current's child list
+    if (DEBUG && debugflag && Current != NULL)
+    {
+        USLOSS_Console("fork1(): Adding new process to child list of process %d.\n", Current->pid);
+    }
+    addChild(proc, Current);
 
     // for future phase(s)
     p1_fork(proc->pid);
@@ -233,7 +231,7 @@ void launch()
 
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("launch(): started\n");
+        USLOSS_Console("launch(): Started.\n");
     }
 
     // Enable interrupts
@@ -244,7 +242,7 @@ void launch()
 
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("Process %d returned to launch\n", Current->pid);
+        USLOSS_Console("Process %d returned to launch.\n", Current->pid);
     }
 
     quit(result);
@@ -303,7 +301,7 @@ int join(int *status)
     // Current->quitChildPtr should not be NULL at this point!
     if (Current->quitChildPtr == NULL)
     {
-        USLOSS_Console("quit(): Process %d has no quit children, when it absolutely must.\n", Current->pid);
+        USLOSS_Console("join(): Process %d has no quit children, when it absolutely must.\n", Current->pid);
         USLOSS_Halt(1);
     }
 
@@ -311,16 +309,21 @@ int join(int *status)
     procPtr quitChild = Current->quitChildPtr;
     Current->quitChildPtr = Current->quitChildPtr->nextQuitSiblingPtr;
 
-    // Mark the quit child as dead
-    quitChild->status = STATUS_DEAD;
-    removeDeadChildren(Current);
-
     // Extract info from quit child
     *status = quitChild->quitStatus;
     if (DEBUG && debugflag)
     {
-        USLOSS_Console("Process %d's child %d quit with status %d.\n", Current->pid, quitChild->pid, *status);
+        USLOSS_Console("join(): Process %d's child %d quit with status %d.\n", Current->pid, quitChild->pid, *status);
     }
+ 
+    // Mark the quit child as dead
+    quitChild->status = STATUS_DEAD;
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("join(): Removing quit child from child list.\n");
+    }
+    removeDeadChildren(Current);
+
     return quitChild->pid;
 } /* join */
 
@@ -348,16 +351,30 @@ void quit(int status)
         childPtr = childPtr->nextSiblingPtr;
     }
     // Set current's status to quit
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("quit(): Process %d has called quit with status %d.\n", Current->pid, status);
+    }
     Current->status = STATUS_QUIT;
     Current->quitStatus = status;
+
     // Notify parent that this process has quit
     procPtr parentPtr = Current->parentPtr;
     if (parentPtr != NULL)
     {
-        addQuitChild(parentPtr, Current);
-        // Set the parent's status to ready and add it to the process table
-        if(parentPtr->status == STATUS_BLOCKED_JOIN)
+        if (DEBUG && debugflag)
         {
+            USLOSS_Console("quit(): Notifying parent process %d.\n", parentPtr->pid);
+        }
+        addQuitChild(parentPtr, Current);
+
+        // Set the parent's status to ready and add it to the process table
+        if (parentPtr->status == STATUS_BLOCKED_JOIN)
+        {
+            if (DEBUG && debugflag)
+            {
+                USLOSS_Console("quit(): Parent was blocked on join. Unblocking.\n");
+            }
             parentPtr->status = STATUS_READY;
             addProc(&ReadyList, parentPtr);
         }
@@ -366,7 +383,14 @@ void quit(int status)
     // Unblock the processes that zapped this process
     unblockProcessesThatZappedThisProcess(Current);
 
+    // For future phases
     p1_quit(Current->pid);
+
+    // Call the dispatcher
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("quit(): Calling the dispatcher.\n");
+    }
     dispatcher();
 } /* quit */
 

@@ -318,21 +318,21 @@ void addQuitChild(procPtr parent, procPtr child)
  */
 void removeDeadChildren(procPtr parent)
 {
-    if (parent == NULL || parent->childProcPtr == NULL)
+    if (parent == NULL)
     {
         return;
     }
 
     // Handle leading dead children
-    while (parent->childProcPtr->status == STATUS_DEAD)
+    while (parent->childProcPtr != NULL && parent->childProcPtr->status == STATUS_DEAD)
     {
         parent->childProcPtr = parent->childProcPtr->nextSiblingPtr;
     }
 
     procPtr olderSibling = parent->childProcPtr; // Older sibling is not dead
-    while(olderSibling->nextSiblingPtr != NULL)
+    while(olderSibling != NULL && olderSibling->nextSiblingPtr != NULL)
     {
-        while (olderSibling->nextSiblingPtr->status == STATUS_DEAD)
+        if (olderSibling->nextSiblingPtr->status == STATUS_DEAD)
         {
             olderSibling->nextSiblingPtr = olderSibling->nextSiblingPtr->nextSiblingPtr;
         }
