@@ -17,7 +17,6 @@ extern priorityQueue ReadyList;
 
 void launch();
 
-
 /*
  * Helper for fork1() that calculates the pid for the next process.
  */
@@ -293,26 +292,53 @@ void addChild(procPtr child, procPtr parent)
     }
 }
 
- /*
-  * Used by quit to add a child to the given process's quit child list
-  */
- void addQuitChild(procPtr parent, procPtr child)
- {
-   if(parent->quitChildPtr == NULL)
-   {
-       parent->quitChildPtr = child;
-   }
-   else
-   {
-       procPtr quitChildPtr = parent->quitChildPtr;
-       // add Current to nextQuitSiblingPtr list
-       while(quitChildPtr->nextQuitSiblingPtr != NULL)
-       {
-           quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
-       }
-       quitChildPtr->nextQuitSiblingPtr = child;
-   }
- }
+/*
+ * Used by quit to add a child to the given process's quit child list
+ */
+void addQuitChild(procPtr parent, procPtr child)
+{
+    if(parent->quitChildPtr == NULL)
+    {
+        parent->quitChildPtr = child;
+    }
+    else
+    {
+        procPtr quitChildPtr = parent->quitChildPtr;
+        // add Current to nextQuitSiblingPtr list
+        while(quitChildPtr->nextQuitSiblingPtr != NULL)
+        {
+            quitChildPtr = quitChildPtr->nextQuitSiblingPtr;
+        }
+        quitChildPtr->nextQuitSiblingPtr = child;
+    }
+}
+
+/*
+ * Helper used by join to remove children from the child list.
+ */
+void removeDeadChildren(procPtr parent)
+{
+    if (parent == NULL || parent->childProcPtr == NULL)
+    {
+        return;
+    }
+
+    // Handle leading dead children
+    while (parent->childProcPtr->status == STATUS_DEAD)
+    {
+        parent->childProcPtr = parent->childProcPtr->nextSiblingPtr;
+    }
+
+    procPtr olderSibling = parent->childProcPtr; // Older sibling is not dead
+    while(olderSibling->nextSiblingPtr != NULL)
+    {
+        while (olderSibling->nextSiblingPtr->status == STATUS_DEAD)
+        {
+            olderSibling->nextSiblingPtr = olderSibling->nextSiblingPtr->nextSiblingPtr;
+        }
+        olderSibling = olderSibling->nextSiblingPtr;
+    }
+}
 
 /*
  * Used by zap to add the zapping process to the list of processes that zapped

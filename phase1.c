@@ -313,7 +313,7 @@ int join(int *status)
 
     // Mark the quit child as dead
     quitChild->status = STATUS_DEAD;
-    // TODO: Remove quit child from child list
+    removeDeadChildren(Current);
 
     // Extract info from quit child
     *status = quitChild->quitStatus;
