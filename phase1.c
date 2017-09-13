@@ -6,7 +6,6 @@
    Fall 2017
 
    ------------------------------------------------------------------------ */
-
 #include "phase1.h"
 #include "kernel.h"
 #include "phase1utility.h"
@@ -26,9 +25,8 @@ extern int start1 (char *);
 static void checkDeadlock();
 
 /* -------------------------- Globals ------------------------------------- */
-
 // Patrick's debugging global variable...
-int debugflag = 1;
+int debugflag = 0;
 
 // the process table
 procStruct ProcTable[MAXPROC];
@@ -246,9 +244,7 @@ void launch()
     }
 
     quit(result);
-
 } /* launch */
-
 
 /* ------------------------------------------------------------------------
    Name - join
@@ -327,7 +323,6 @@ int join(int *status)
     return quitChild->pid;
 } /* join */
 
-
 /* ------------------------------------------------------------------------
    Name - quit
    Purpose - Stops the child process and notifies the parent of the death by
@@ -345,7 +340,7 @@ void quit(int status)
     {
         if (childPtr->status != STATUS_QUIT)
         {
-            USLOSS_Console("quit(): Process attempting to quit with living children.  Halting...\n");
+            USLOSS_Console("quit(): process %d, '%s', has active children. Halting...\n", Current->pid, Current->name);
             USLOSS_Halt(1);
         }
         childPtr->status = STATUS_DEAD;
@@ -478,7 +473,6 @@ void dispatcher(void)
    Side Effects -  if system is in deadlock, print appropriate error
                    and halt.
    ----------------------------------------------------------------------- */
-
 int sentinel (char *dummy)
 {
     if (DEBUG && debugflag)
@@ -491,7 +485,6 @@ int sentinel (char *dummy)
         USLOSS_WaitInt();
     }
 } /* sentinel */
-
 
 /* check to determine if deadlock has occurred... */
 static void checkDeadlock()
@@ -516,5 +509,6 @@ static void checkDeadlock()
         }
     }
     // Currently, there is no reason not to halt here
+    USLOSS_Console("All processes completed.\n");
     USLOSS_Halt(0);
 } /* checkDeadlock */
