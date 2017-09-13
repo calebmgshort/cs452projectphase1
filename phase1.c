@@ -26,7 +26,7 @@ static void checkDeadlock();
 
 /* -------------------------- Globals ------------------------------------- */
 // Patrick's debugging global variable...
-int debugflag = 1;
+int debugflag = 0;
 
 // the process table
 procStruct ProcTable[MAXPROC];

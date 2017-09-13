@@ -104,7 +104,7 @@ void dumpProcesses()
     if(process.status == STATUS_QUIT || process.status == STATUS_DEAD){
       continue;
     }
-    short parentPid = -2;
+    short parentPid = -1;
     if(process.parentPtr != NULL)
     {
       parentPid = process.parentPtr->pid;
@@ -134,6 +134,9 @@ void dumpProcesses()
     {
         CPUTime = -1;
     }
+    short pid = process.pid;
+    if(pid == 0)
+        pid = 1;
     USLOSS_Console("%d\t  %d\t   %d\t\t%s\t\t  %d\t   %d\t%s\n",
         process.pid, parentPid, process.priority, status, numChildren(&process), CPUTime, process.name);
   }
