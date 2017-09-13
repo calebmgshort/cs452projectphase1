@@ -350,6 +350,9 @@ void quit(int status)
         }
         childPtr = childPtr->nextSiblingPtr;
     }
+
+    // TODO quit children should be dead once Current quits!
+
     // Set current's status to quit
     if (DEBUG && debugflag)
     {
