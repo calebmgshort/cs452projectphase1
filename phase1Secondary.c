@@ -86,7 +86,7 @@ int readCurStartTime(void)
  */
 int readtime(void)
 {
-    return Current->runningTime;
+    return Current->CPUTime/1000;
 }
 
 /*
@@ -129,13 +129,13 @@ void dumpProcesses()
     {
       strcpy(status, "RUNNING");
     }
-    int CPUTime = Current->runningTime;
-    if(CPUTime == 0)
+    int CPUTimeMilliseconds = Current->CPUTime/1000;
+    if(CPUTimeMilliseconds == 0)
     {
-        CPUTime = -1;
+        CPUTimeMilliseconds = -1;
     }
     USLOSS_Console("%d\t  %d\t   %d\t\t%s\t\t  %d\t   %d\t%s\n",
-        process.pid, parentPid, process.priority, status, numChildren(&process), CPUTime, process.name);
+        process.pid, parentPid, process.priority, status, numChildren(&process), CPUTimeMilliseconds, process.name);
   }
 }
 

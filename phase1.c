@@ -26,7 +26,7 @@ static void checkDeadlock();
 
 /* -------------------------- Globals ------------------------------------- */
 // Patrick's debugging global variable...
-int debugflag = 0;
+int debugflag = 1;
 
 // the process table
 procStruct ProcTable[MAXPROC];
@@ -403,15 +403,15 @@ void quit(int status)
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
-    // Add the runnning time (in ms) to the last process
+    // Add the runnning time (in microseconds) to the last process
     if (Current != NULL)
     {
-        int deltaTime = (getCurrentTime() - Current->startTime) / 1000;
+        int deltaTime = getCurrentTime() - Current->startTime;
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("dispatcher(): Adding %d ms to running time for process %d.\n", deltaTime, Current->pid);
+            USLOSS_Console("dispatcher(): Adding %d microseconds to running time for process %d.\n", deltaTime, Current->pid);
         }
-        Current->runningTime += deltaTime;
+        Current->CPUTime += deltaTime;
     }
 
     // Put the old process back on the ready list, if appropriate.
