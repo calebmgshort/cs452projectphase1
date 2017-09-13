@@ -96,7 +96,7 @@ int readtime(void)
  */
 void dumpProcesses()
 {
-  USLOSS_Console("PID\tParent PID\tPriority\tProcess Status\tNumber of Children\tCPU Time Consumed (ms)\tName\n");
+  USLOSS_Console("PID\tParent\tPriority\tStatus\t\t#Kids\tCPUtime\tName\n");
   int i;
   for(i = 0; i < 50; i++)
   {
@@ -104,7 +104,7 @@ void dumpProcesses()
     if(process.status == STATUS_QUIT || process.status == STATUS_DEAD){
       continue;
     }
-    short parentPid = -1;
+    short parentPid = -2;
     if(process.parentPtr != NULL)
     {
       parentPid = process.parentPtr->pid;
@@ -113,20 +113,29 @@ void dumpProcesses()
     switch(process.status)
     {
       case(STATUS_BLOCKED_ZAP):
-        strcpy(status, "STATUS_BLOCKED_ZAP");
+        strcpy(status, "BLOCKED_ZAP");
         break;
       case(STATUS_BLOCKED_JOIN):
-        strcpy(status, "STATUS_BLOCKED_JOIN");
+        strcpy(status, "BLOCKED_JOIN");
         break;
       case(STATUS_READY):
-        strcpy(status, "STATUS_READY");
+        strcpy(status, "READY");
         break;
       case(STATUS_ZAPPED):
-        strcpy(status, "STATUS_ZAPPED");
+        strcpy(status, "ZAPPED");
         break;
     }
-    USLOSS_Console("%d\t%d\t%d\t%s\t%d\t%d\t%s\n",
-        process.pid, parentPid, process.priority, status, numChildren(&process), Current->runningTime, process.name);
+    if(process.pid == Current->pid)
+    {
+      strcpy(status, "RUNNING");
+    }
+    int CPUTime = Current->runningTime;
+    if(CPUTime == 0)
+    {
+        CPUTime = -1;
+    }
+    USLOSS_Console("%d\t  %d\t   %d\t\t%s\t\t  %d\t   %d\t%s\n",
+        process.pid, parentPid, process.priority, status, numChildren(&process), CPUTime, process.name);
   }
 }
 
