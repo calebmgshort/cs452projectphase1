@@ -76,6 +76,8 @@ void startup(int argc, char *argv[])
         USLOSS_Console("startup(): Initializing interrupt handlers.\n");
     }
     USLOSS_IntVec[USLOSS_CLOCK_INT] = clockHandler;
+    // Initialize the USLOSS_ILLEGAL_INT interrupt handlers
+    USLOSS_IntVec[USLOSS_ILLEGAL_INT] = illegalIntHandler;
 
     // startup a sentinel process
     if (DEBUG && debugflag)
@@ -148,6 +150,12 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
 
     // enable interrupts
     enableInterrupts();
+
+    // TODO: Professor Homer said (on Piazza) that all phase1 functions should
+    // disable interrupts at the beginning
+
+    // disable interrupts
+    //disableInterrupts();
 
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
@@ -260,6 +268,9 @@ void launch()
    ------------------------------------------------------------------------ */
 int join(int *status)
 {
+    // ensure that we are in kernel mode
+    checkMode("join");
+
     // case 1: Has no quit or unquit children.
     if (Current->childProcPtr == NULL)
     {
@@ -334,6 +345,9 @@ int join(int *status)
    ------------------------------------------------------------------------ */
 void quit(int status)
 {
+    // ensure that we are in kernel mode
+    checkMode("quit");
+
     // check for any non quit children
     procPtr childPtr = Current->childProcPtr;
     while(childPtr != NULL)

@@ -14,6 +14,7 @@ extern unsigned int nextPid;
 extern procStruct ProcTable[];
 extern int debugflag;
 extern priorityQueue ReadyList;
+extern procPtr Current;
 
 void launch();
 
@@ -182,7 +183,7 @@ void checkMode(char * funcName)
     // test if in kernel mode; halt if in user mode
     if (!inKernelMode())
     {
-        USLOSS_Console("%s(): Called in user mode.  Halting...\n", funcName);
+        USLOSS_Console("%s(): called while in user mode, by process %d. Halting...\n", funcName, Current->pid);
         USLOSS_Halt(1);
     }
 }
@@ -225,14 +226,15 @@ void disableInterrupts()
     // set the current interrupt bit to 0
     psr = psr & ~USLOSS_PSR_CURRENT_INT;
 
-    /*
+
+
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
     {
         if (DEBUG && debugflag)
-            USLOSS_Console("launch(): Bug in interrupt set.");
+            USLOSS_Console("launch(): Bug in disableInterrupts.");
     }
-    */
+
 } /* disableInterrupts */
 
 /*
@@ -258,14 +260,14 @@ void enableInterrupts()
     // set the current interrupt bit to 1
     psr = psr | USLOSS_PSR_CURRENT_INT;
 
-    /*
+
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
     {
         if (DEBUG && debugflag)
-            USLOSS_Console("launch(): Bug in interrupt set.");
+            USLOSS_Console("launch(): Bug in enableInterrupts.");
     }
-    */
+
 } /* enableInterrupts */
 
 /*
