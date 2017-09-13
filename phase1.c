@@ -456,10 +456,9 @@ void dispatcher(void)
         p1_switch(Current->pid, nextProcess->pid);
     }
     Current = nextProcess;
-    USLOSS_ContextSwitch(old, new);
-
     // Update the running start time for the new Current
     Current->startTime = getCurrentTime();
+    USLOSS_ContextSwitch(old, new);
 } /* dispatcher */
 
 /* ------------------------------------------------------------------------
