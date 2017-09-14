@@ -32,7 +32,7 @@ int getNextPid()
     {
         slot = (baseSlot + i) % MAXPROC;
         proc = &ProcTable[slot];
-        if (proc->pid == 0)
+        if (proc->pid == PID_NEVER_EXISTED)
         {
             // this slot was never occupied, so this pid is new
             if (slot == 0)
@@ -72,7 +72,7 @@ int pidToSlot(int pid)
  */
 bool processExists(procPtr process)
 {
-    return process->pid != 0 && process->status != STATUS_DEAD;
+    return process->pid != PID_NEVER_EXISTED && process->status != STATUS_DEAD;
 }
 
 /*
@@ -198,7 +198,7 @@ int numChildren(procPtr process)
     while(currentChildPtr != NULL)
     {
         numChildren++;
-        currentChildPtr = currentChildPtr->nextProcPtr;
+        currentChildPtr = currentChildPtr->nextSiblingPtr;
     }
     return numChildren;
 }
@@ -280,6 +280,7 @@ void addChild(procPtr child, procPtr parent)
         if (parent->childProcPtr == NULL)
         {
             parent->childProcPtr = child;
+            //USLOSS_Console("addChild(): after: childProcPtr=%d\n", child->pid);
         }
         else
         {
@@ -289,6 +290,19 @@ void addChild(procPtr child, procPtr parent)
             {
                 olderSib = olderSib->nextSiblingPtr;
             }
+            /*
+            if(child->pid == 53)
+            {
+                USLOSS_Console("addChild(): olderSibling pid=%d, child pid=53.\n", olderSib->pid);
+                procPtr bigBro = parent->childProcPtr;;
+                while (bigBro->nextSiblingPtr != NULL)
+                {
+                    USLOSS_Console("pid=%d.\n", bigBro->pid);
+                    bigBro = bigBro->nextSiblingPtr;
+                }
+                USLOSS_Console("pid=%d.\n", bigBro->pid);
+            }
+            */
             olderSib->nextSiblingPtr = child;
         }
     }
@@ -404,4 +418,20 @@ int getCurrentTime()
         USLOSS_Halt(1);
     }
     return time;
+}
+
+/*
+ * Prints the child list of the given parent. Used for debugging exclusively
+ */
+void printChildList(procPtr parent){
+  USLOSS_Console("\tPrinting child list for parent %d:\n", parent->pid);
+  if (parent->childProcPtr != NULL)
+  {
+      procPtr child = parent->childProcPtr;
+      while (child != NULL)
+      {
+          USLOSS_Console("\t\t%d\n", child->pid);
+          child = child->nextSiblingPtr;
+      }
+  }
 }

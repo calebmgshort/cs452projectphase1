@@ -60,7 +60,9 @@ void startup(int argc, char *argv[])
     }
     for (int i = 0; i < MAXPROC; i++)
     {
-        ProcTable[i].pid = 0;
+        ProcTable[i].pid = PID_NEVER_EXISTED;
+        ProcTable[i].priority = -1;
+        ProcTable[i].status = STATUS_EMPTY;
     }
 
     // Initialize the Ready list
@@ -149,13 +151,13 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     checkMode("fork1");
 
     // enable interrupts
-    enableInterrupts();
+    //enableInterrupts();
 
     // TODO: Professor Homer said (on Piazza) that all phase1 functions should
     // disable interrupts at the beginning
 
     // disable interrupts
-    //disableInterrupts();
+    disableInterrupts();
 
     // Return if stack size is too small
     if (stacksize < USLOSS_MIN_STACK)
@@ -187,8 +189,20 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (DEBUG && debugflag)
     {
         USLOSS_Console("fork1(): Initializing process table entry.\n");
+        if(pid == 54){
+            int i;
+            for (i = 0; i < 50; i++)
+            {
+                USLOSS_Console("%d: %d.\n", i, ProcTable[i].status);
+            }
+        }
     }
-    procPtr proc = &ProcTable[pidToSlot(pid)];
+    int slot = pidToSlot(pid);
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("fork1(): slot found is %d\n", slot);
+    }
+    procPtr proc = &ProcTable[slot];
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
         return -1;
@@ -197,9 +211,15 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     // Add the new proc to Current's child list
     if (DEBUG && debugflag && Current != NULL)
     {
-        USLOSS_Console("fork1(): Adding new process to child list of process %d.\n", Current->pid);
+        USLOSS_Console("fork1(): Adding new process %d to child list of process %d.\n", pid, Current->pid);
+        printChildList(Current);
     }
     addChild(proc, Current);
+    if(DEBUG && debugflag && Current != NULL)
+    {
+        printChildList(Current);
+        USLOSS_Console("\tnumChildren:%d\n", numChildren(Current));
+    }
 
     // for future phase(s)
     p1_fork(proc->pid);
@@ -270,6 +290,8 @@ int join(int *status)
 {
     // ensure that we are in kernel mode
     checkMode("join");
+
+    disableInterrupts();
 
     // case 1: Has no quit or unquit children.
     if (Current->childProcPtr == NULL)
@@ -348,11 +370,13 @@ void quit(int status)
     // ensure that we are in kernel mode
     checkMode("quit");
 
-    // check for any non quit children
+    disableInterrupts();
+
+    // check for any active children
     procPtr childPtr = Current->childProcPtr;
     while(childPtr != NULL)
     {
-        if (childPtr->status != STATUS_QUIT)
+        if (childPtr->status != STATUS_QUIT && childPtr->status != STATUS_DEAD)
         {
             USLOSS_Console("quit(): process %d, '%s', has active children. Halting...\n", Current->pid, Current->name);
             USLOSS_Halt(1);
@@ -423,7 +447,7 @@ void dispatcher(void)
         int deltaTime = getCurrentTime() - Current->startTime;
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("dispatcher(): Adding %d microseconds to running time for process %d.\n", deltaTime, Current->pid);
+            USLOSS_Console("dispatcher(): Adding %d microseconds to CPUTime for process %d.\n", deltaTime, Current->pid);
         }
         Current->CPUTime += deltaTime;
     }

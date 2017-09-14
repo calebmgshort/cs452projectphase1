@@ -30,4 +30,7 @@ void addZappedProcess(procPtr, procPtr);
 void unblockProcessesThatZappedThisProcess(procPtr);
 int getCurrentTime();
 
+// Functions used only for debugging
+void printChildList(procPtr);
+
 #endif

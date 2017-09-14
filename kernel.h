@@ -61,11 +61,14 @@ union psrValues
 #define MAX_TIME_SLICE 80000
 
 // Status codes
+#define STATUS_EMPTY -1        // This process has never been initialized
 #define STATUS_READY 0         // Should be on the ready list.
 #define STATUS_BLOCKED_ZAP 1   // Blocked because this is zapping another process.
 #define STATUS_QUIT 2          // This process has quit.
 #define STATUS_ZAPPED 3        // This process has been zapped. It should quit eventually.
 #define STATUS_BLOCKED_JOIN 4  // Blocked waiting for a child to quit.
 #define STATUS_DEAD 5          // This process has quit and has been joined by its parent.
+
+#define PID_NEVER_EXISTED -1
 
 #endif

@@ -105,7 +105,7 @@ void dumpProcesses()
     if(process.status == STATUS_QUIT || process.status == STATUS_DEAD){
       continue;
     }
-    short parentPid = -1;
+    short parentPid = PID_NEVER_EXISTED;
     if(process.parentPtr != NULL)
     {
       parentPid = process.parentPtr->pid;
@@ -113,33 +113,37 @@ void dumpProcesses()
     char status[30];
     switch(process.status)
     {
+      case(STATUS_EMPTY):
+        strcpy(status, "EMPTY\t");
+        break;
       case(STATUS_BLOCKED_ZAP):
-        strcpy(status, "BLOCKED_ZAP");
+        strcpy(status, "ZAP_BLOCK");
         break;
       case(STATUS_BLOCKED_JOIN):
-        strcpy(status, "BLOCKED_JOIN");
+        strcpy(status, "JOIN_BLOCK");
         break;
       case(STATUS_READY):
-        strcpy(status, "READY");
+        strcpy(status, "READY\t");
         break;
       case(STATUS_ZAPPED):
-        strcpy(status, "ZAPPED");
+        strcpy(status, "ZAPPED\t");
         break;
     }
     if(process.pid == Current->pid)
     {
-      strcpy(status, "RUNNING");
+      strcpy(status, "RUNNING\t");
     }
     int CPUTime = process.CPUTime;
     if(CPUTime == 0)
     {
         CPUTime = -1;
     }
-    short pid = process.pid;
-    if(pid == 0)
-        pid = 1;
-    USLOSS_Console("%d\t  %d\t   %d\t\t%s\t\t  %d\t   %d\t%s\n",
+    USLOSS_Console("%d\t  %d\t   %d\t\t%s\t  %d\t   %d\t%s\n",
         process.pid, parentPid, process.priority, status, numChildren(&process), CPUTime, process.name);
+    //if(numChildren(&process) == 1){
+    //  USLOSS_Console("%d\n", process.childProcPtr->pid);
+    //  USLOSS_Console("%d\n", process.childProcPtr->nextProcPtr != NULL);
+    //}
   }
 }
 
@@ -206,7 +210,7 @@ int zap(int pid)
         USLOSS_Console("zap(): Now waiting for the zappee to quit\n");
     }
 
-    while(processBeingZapped->status != STATUS_QUIT)
+    while(processBeingZapped->status != STATUS_QUIT && processBeingZapped->status != STATUS_DEAD)
     {
         if(Current->status == STATUS_ZAPPED)
         {
@@ -215,6 +219,10 @@ int zap(int pid)
                 USLOSS_Console("zap(): The zapper %d was zapped while waiting for the zappee %d to quit\n", Current->pid, pid);
             }
             return -1;
+        }
+        if (DEBUG && debugflag)
+        {
+            USLOSS_Console("zap(): Process %d is waiting for zapped process %d to quit\n", Current->pid, pid);
         }
         // Call the sentinel since this process can't do anything right now anyway
         dispatcher();
