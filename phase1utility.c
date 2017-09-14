@@ -362,7 +362,7 @@ void removeDeadChildren(procPtr parent)
  */
 void addZappedProcess(procPtr processZapping, procPtr processBeingZapped)
 {
-  processBeingZapped->status = STATUS_ZAPPED;
+  processBeingZapped->isZapped = 1;
   if(processBeingZapped->procThatZappedMe == NULL)
   {
       processBeingZapped->procThatZappedMe = processZapping;

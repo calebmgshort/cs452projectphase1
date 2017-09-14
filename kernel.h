@@ -35,6 +35,7 @@ struct procStruct
     int             quitStatus;              // the exit status of this proc, if it has already quit
     int             startTime;               // The time at which this process last started executing (microseconds).
     long            CPUTime;                 // The amount of time this process has run (microseconds)
+    int             isZapped;                // Has this proces been zapped?
 };
 
 struct psrBits
@@ -65,7 +66,6 @@ union psrValues
 #define STATUS_READY 0         // Should be on the ready list.
 #define STATUS_BLOCKED_ZAP 1   // Blocked because this is zapping another process.
 #define STATUS_QUIT 2          // This process has quit.
-#define STATUS_ZAPPED 3        // This process has been zapped. It should quit eventually.
 #define STATUS_BLOCKED_JOIN 4  // Blocked waiting for a child to quit.
 #define STATUS_DEAD 5          // This process has quit and has been joined by its parent.
 

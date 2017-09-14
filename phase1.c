@@ -320,7 +320,7 @@ int join(int *status)
     }
 
     // Handle the case where the process was zapped while waiting for a child to quit
-    if (Current->status == STATUS_ZAPPED)
+    if (Current->isZapped)
     {
         return -1;
     }
@@ -453,7 +453,7 @@ void dispatcher(void)
     }
 
     // Put the old process back on the ready list, if appropriate.
-    if (Current != NULL && (Current->status == STATUS_READY || Current->status == STATUS_ZAPPED))
+    if (Current != NULL && Current->status == STATUS_READY)
     {
         if (DEBUG && debugflag)
         {
