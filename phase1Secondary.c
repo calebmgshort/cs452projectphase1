@@ -25,7 +25,7 @@ int blockMe(int block_status)
         USLOSS_Console("Error. blockMe received an order to block a process with status < 10");
         USLOSS_Halt(1);
     }
-    if(Current->status == STATUS_ZAPPED)
+    if(Current->isZapped)
         return -1;
     Current->status = block_status;
     return 0;
@@ -47,7 +47,7 @@ int unblockProc(int pid)
     procPtr process = &ProcTable[pidToSlot(pid)];
     if(!processExists(process) || process->pid == Current->pid || process->status <= 10)
         return -2;
-    if(Current->status == STATUS_ZAPPED)
+    if(Current->isZapped)
         return -1;
     // Set the process's status to ready
     process->status = STATUS_READY;
@@ -134,10 +134,14 @@ void dumpProcesses()
           strcpy(status, "JOIN_BLOCK");
           break;
         case(STATUS_READY):
-          strcpy(status, "READY\t");
-          break;
-        case(STATUS_ZAPPED):
-          strcpy(status, "ZAPPED\t");
+          if (process.isZapped)
+          {
+            strcpy(status, "ZAPPED\t");
+          }
+          else
+          {
+            strcpy(status, "READY\t");
+          }
           break;
         case(STATUS_QUIT):
           strcpy(status, "QUIT\t");
@@ -218,8 +222,7 @@ int zap(int pid)
     }
 
     // Change the status of the process being zapped
-    processBeingZapped->status = STATUS_ZAPPED;
-    addProc(&ReadyList, processBeingZapped);
+    processBeingZapped->isZapped = 1;
 
     if (DEBUG && debugflag)
     {
@@ -238,7 +241,7 @@ int zap(int pid)
 
     while(processBeingZapped->status != STATUS_QUIT && processBeingZapped->status != STATUS_DEAD)
     {
-        if(Current->status == STATUS_ZAPPED)
+        if(Current->isZapped)
         {
             if (DEBUG && debugflag)
             {
@@ -266,7 +269,7 @@ int zap(int pid)
    ------------------------------------------------------------------------ */
 int isZapped(void)
 {
-    if(Current->status == STATUS_ZAPPED)
+    if(Current->isZapped)
     {
         return 1;
     }
