@@ -212,13 +212,11 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (DEBUG && debugflag && Current != NULL)
     {
         USLOSS_Console("fork1(): Adding new process %d to child list of process %d.\n", pid, Current->pid);
-        printChildList(Current);
     }
     addChild(proc, Current);
     if(DEBUG && debugflag && Current != NULL)
     {
         printChildList(Current);
-        USLOSS_Console("\tnumChildren:%d\n", numChildren(Current));
     }
 
     // for future phase(s)
@@ -319,11 +317,19 @@ int join(int *status)
         // Proceed like case 2 from here on
     }
 
+    // Once again make sure that no interrupts happen here
+    disableInterrupts();
+
     // Handle the case where the process was zapped while waiting for a child to quit
     if (Current->isZapped)
     {
+        if (DEBUG && debugflag)
+        {
+          USLOSS_Console("join(): Process %d was zapped while waiting for a join. Returning -1.\n", Current->pid);
+        }
         return -1;
     }
+
 
     // case 2: At least 1 quit child waiting to be joined
 
@@ -347,6 +353,7 @@ int join(int *status)
 
     // Mark the quit child as dead
     quitChild->status = STATUS_DEAD;
+    //USLOSS_Console("join(): Dead child according to self: %d, according to table: %d.\n", quitChild->status, ProcTable[pidToSlot(quitChild->pid)].status);
     if (DEBUG && debugflag)
     {
         USLOSS_Console("join(): Removing quit child from child list.\n");
@@ -451,7 +458,6 @@ void dispatcher(void)
         }
         Current->CPUTime += deltaTime;
     }
-
     // Put the old process back on the ready list, if appropriate.
     if (Current != NULL && Current->status == STATUS_READY)
     {
@@ -461,7 +467,11 @@ void dispatcher(void)
         }
         addProc(&ReadyList, Current);
     }
-
+    if(DEBUG && debugflag)
+    {
+        dumpProcesses();
+        printPriorityQueue(&ReadyList);
+    }
     // Get the next process from the ready list
     procPtr nextProcess = removeProc(&ReadyList);
     if (nextProcess == NULL)
@@ -537,6 +547,10 @@ static void checkDeadlock()
         procPtr proc = &ProcTable[slot];
         if (processExists(proc))
         {
+            if (DEBUG && debugflag)
+            {
+                USLOSS_Console("checkDeadlock(): process %d still exists\n", proc->pid);
+            }
             numProc++;
         }
     }
@@ -545,6 +559,10 @@ static void checkDeadlock()
         // The sentinel is called even though other procs exist.
         // There must be a deadlock
         USLOSS_Console("checkDeadlock(): numProc = %d. Only Sentinel should be left. Halting...\n", numProc);
+        if (DEBUG && debugflag)
+        {
+            dumpProcesses();
+        }
         USLOSS_Halt(1);
     }
 

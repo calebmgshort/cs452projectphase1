@@ -25,12 +25,12 @@ struct queue
 
 struct priorityQueue
 {
-     queue queues[SENTINELPRIORITY]; 
+     queue queues[SENTINELPRIORITY];
 };
 
 void initPriorityQueue(pqPtr);
 void addProc(pqPtr, procPtr);
 procPtr removeProc(pqPtr);
+void printPriorityQueue(pqPtr);
 
 #endif /* _QUEUE_H */
-

@@ -111,48 +111,69 @@ void dumpProcesses()
   for(i = 0; i < 50; i++)
   {
     procStruct process = ProcTable[i];
-    if(process.status == STATUS_QUIT || process.status == STATUS_DEAD){
-      continue;
-    }
+
+    USLOSS_Console("%d\t  ", process.pid);
+
     short parentPid = PID_NEVER_EXISTED;
     if(process.parentPtr != NULL)
     {
       parentPid = process.parentPtr->pid;
     }
+
+    USLOSS_Console("%d\t   ", parentPid);
+
+    USLOSS_Console("%d\t\t", process.priority);
+
     char status[30];
-    switch(process.status)
-    {
-      case(STATUS_EMPTY):
-        strcpy(status, "EMPTY\t");
-        break;
-      case(STATUS_BLOCKED_ZAP):
-        strcpy(status, "ZAP_BLOCK");
-        break;
-      case(STATUS_BLOCKED_JOIN):
-        strcpy(status, "JOIN_BLOCK");
-        break;
-      case(STATUS_READY):
-        if (process.isZapped)
-        {
-            strcpy(status, "ZAPPED\t");
-        }
-        else
-        {
-            strcpy(status, "READY\t");
-        }
-        break;
-    }
-    if(process.pid == Current->pid)
+    if(Current != NULL && process.pid == Current->pid)
     {
       strcpy(status, "RUNNING\t");
     }
+    else
+    {
+      switch(process.status)
+      {
+        case(STATUS_EMPTY):
+          strcpy(status, "EMPTY\t");
+          break;
+        case(STATUS_BLOCKED_ZAP):
+          strcpy(status, "ZAP_BLOCK");
+          break;
+        case(STATUS_BLOCKED_JOIN):
+          strcpy(status, "JOIN_BLOCK");
+          break;
+        case(STATUS_READY):
+          if (process.isZapped)
+          {
+            strcpy(status, "ZAPPED\t");
+          }
+          else
+          {
+            strcpy(status, "READY\t");
+          }
+          break;
+        case(STATUS_QUIT):
+          strcpy(status, "QUIT\t");
+          break;
+        case(STATUS_DEAD):
+          strcpy(status, "DEAD\t");
+          break;
+        default:
+          strcpy(status, "UNKOWN\t");
+          break;
+      }
+    }
+    USLOSS_Console("%s\t  ", status);
+
+    USLOSS_Console("%d\t   ", numChildren(&process));
+
     int CPUTime = process.CPUTime;
     if(CPUTime == 0)
     {
         CPUTime = -1;
     }
-    USLOSS_Console("%d\t  %d\t   %d\t\t%s\t  %d\t   %d\t%s\n",
-        process.pid, parentPid, process.priority, status, numChildren(&process), CPUTime, process.name);
+
+    USLOSS_Console("%d\t%s\n", CPUTime, process.name);
     //if(numChildren(&process) == 1){
     //  USLOSS_Console("%d\n", process.childProcPtr->pid);
     //  USLOSS_Console("%d\n", process.childProcPtr->nextProcPtr != NULL);
@@ -179,6 +200,10 @@ int getpid()
    ------------------------------------------------------------------------ */
 int zap(int pid)
 {
+    // ensure that we are in kernel mode
+    checkMode("zap");
+    disableInterrupts();
+
     if (DEBUG && debugflag)
     {
         USLOSS_Console("zap(): Process %d now zapping process %d\n", Current->pid, pid);
@@ -198,7 +223,7 @@ int zap(int pid)
     }
     else if(processBeingZapped == Current)
     {
-        USLOSS_Console("zap(): process %d tried to zap itself.  Halting...\n", Current->pid);
+        USLOSS_Console("zap(): process %d tried to zap itself.  Halting...\n", pid);
         USLOSS_Halt(1);
     }
     else if(processBeingZapped->status == STATUS_QUIT)

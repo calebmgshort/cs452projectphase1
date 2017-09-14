@@ -218,10 +218,10 @@ void disableInterrupts()
     unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
 
     // set the prev interrupt bit to zero
-    psr = psr & ~USLOSS_PSR_PREV_INT;
+    //psr = psr & ~USLOSS_PSR_PREV_INT;
 
     // move the current interrupt bit to the prev interrupt bit
-    psr = psr | (currentInterrupt << 2);
+    //psr = psr | (currentInterrupt << 2);
 
     // set the current interrupt bit to 0
     psr = psr & ~USLOSS_PSR_CURRENT_INT;
@@ -252,10 +252,10 @@ void enableInterrupts()
     unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
 
     // set the prev interrupt bit to zero
-    psr = psr & ~USLOSS_PSR_PREV_INT;
+    //psr = psr & ~USLOSS_PSR_PREV_INT;
 
     // move the current interrupt bit to the prev interrupt bit
-    psr = psr | (currentInterrupt << 2);
+    //psr = psr | (currentInterrupt << 2);
 
     // set the current interrupt bit to 1
     psr = psr | USLOSS_PSR_CURRENT_INT;

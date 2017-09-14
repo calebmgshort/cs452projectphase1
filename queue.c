@@ -15,6 +15,8 @@
 static bool isEmpty(queuePtr);
 static void addProcFIFO(queuePtr, procPtr);
 static procPtr removeProcFIFO(queuePtr);
+static int containsPID(pqPtr, int);
+extern int debugflag;
 
 
 /* -------------------------- Functions ----------------------------------- */
@@ -37,8 +39,39 @@ void initPriorityQueue(pqPtr pq)
  */
 void addProc(pqPtr pq, procPtr proc)
 {
+    if(containsPID(pq, proc->pid))
+    {
+        if(DEBUG && debugflag)
+        {
+            USLOSS_Console("addProc(): Not adding %d to wait list because it exists already", proc->pid);
+        }
+        return;
+    }
     queuePtr q = &(pq->queues[proc->priority - 1]);
     addProcFIFO(q, proc);
+}
+
+/*
+ * Determines if the given priority queue contains the given pid. If yes, return 1. If not, return 0
+ */
+int containsPID(pqPtr pq, int pid)
+{
+    if(pq == NULL)
+    {
+        return 0;
+    }
+    for (int i = 0; i < SENTINELPRIORITY; i++)
+    {
+        queue singleQueue = pq->queues[i];
+        procPtr node = singleQueue.head;
+        while(node != NULL)
+        {
+            if(node->pid == pid)
+                return 1;
+            node = node->nextProcPtr;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -60,6 +93,28 @@ procPtr removeProc(pqPtr pq)
         }
     }
     return removeProcFIFO(q);
+}
+
+void printPriorityQueue(pqPtr pq)
+{
+    USLOSS_Console("printPriorityQueue(): Now printing\n");
+    if(pq == NULL)
+    {
+        USLOSS_Console("printPriorityQueue(): Priority queue is NULL.\n");
+        return;
+    }
+    for (int i = 0; i < SENTINELPRIORITY; i++)
+    {
+        USLOSS_Console("Priority %d: ", i+1);
+        queue singleQueue = pq->queues[i];
+        procPtr node = singleQueue.head;
+        while(node != NULL)
+        {
+          USLOSS_Console("%d, ", node->pid);
+          node = node->nextProcPtr;
+        }
+        USLOSS_Console("\n");
+    }
 }
 
 /*
@@ -103,4 +158,3 @@ static procPtr removeProcFIFO(queuePtr q)
     ret->nextProcPtr = NULL;
     return ret;
 }
-
