@@ -212,7 +212,7 @@ int zap(int pid)
     }
     else if(processBeingZapped == Current)
     {
-        USLOSS_Console("zap failed because the given process to zap is itself\n");
+        USLOSS_Console("zap(): process %d tried to zap itself.  Halting...\n", pid);
         USLOSS_Halt(1);
     }
     else if(processBeingZapped->status == STATUS_QUIT)
