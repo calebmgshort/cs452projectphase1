@@ -26,7 +26,7 @@ static void checkDeadlock();
 
 /* -------------------------- Globals ------------------------------------- */
 // Patrick's debugging global variable...
-int debugflag = 1;
+int debugflag = 0;
 
 // the process table
 procStruct ProcTable[MAXPROC];
@@ -310,17 +310,6 @@ int join(int *status)
     // Once again make sure that no interrupts happen here
     disableInterrupts();
 
-    // Handle the case where the process was zapped while waiting for a child to quit
-    if (Current->isZapped)
-    {
-        if (DEBUG && debugflag)
-        {
-          USLOSS_Console("join(): Process %d was zapped while waiting for a join. Returning -1.\n", Current->pid);
-        }
-        return -1;
-    }
-
-
     // case 2: At least 1 quit child waiting to be joined
 
     // Current->quitChildPtr should not be NULL at this point!
@@ -343,12 +332,18 @@ int join(int *status)
 
     // Mark the quit child as dead
     quitChild->status = STATUS_DEAD;
-    //USLOSS_Console("join(): Dead child according to self: %d, according to table: %d.\n", quitChild->status, ProcTable[pidToSlot(quitChild->pid)].status);
+    
     if (DEBUG && debugflag)
     {
         USLOSS_Console("join(): Removing quit child from child list.\n");
     }
     removeDeadChildren(Current);
+
+    // When join is called by a zapped proc, it returns -1 (but otherwise behaves normally)
+    if (Current->isZapped)
+    {
+        return -1;
+    }
 
     return quitChild->pid;
 } /* join */

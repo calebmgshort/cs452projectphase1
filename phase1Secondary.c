@@ -106,13 +106,13 @@ int readtime(void)
  */
 void dumpProcesses()
 {
-  USLOSS_Console("PID\tParent\tPriority\tStatus\t\t#Kids\tCPUtime\tName\n");
+  USLOSS_Console("PID\tParent\tPriority\tStatus\t\t# Kids\tCPUtime\tName \n");
   int i;
   for(i = 0; i < 50; i++)
   {
     procStruct process = ProcTable[i];
 
-    USLOSS_Console("%d\t  ", process.pid);
+    USLOSS_Console(" %d\t  ", process.pid);
 
     short parentPid = PID_NEVER_EXISTED;
     if(process.parentPtr != NULL)
@@ -174,10 +174,6 @@ void dumpProcesses()
     }
 
     USLOSS_Console("%d\t%s\n", CPUTime, process.name);
-    //if(numChildren(&process) == 1){
-    //  USLOSS_Console("%d\n", process.childProcPtr->pid);
-    //  USLOSS_Console("%d\n", process.childProcPtr->nextProcPtr != NULL);
-    //}
   }
 }
 
@@ -188,7 +184,6 @@ int getpid()
 {
     return Current->pid;
 }
-
 
 /* ------------------------------------------------------------------------
    Name - zap
@@ -211,14 +206,9 @@ int zap(int pid)
     procPtr processBeingZapped = &ProcTable[pidToSlot(pid)];
 
     // check halting conditions
-    if(pid < 0)
+    if(pid < 0 || !processExists(processBeingZapped) || pid != processBeingZapped->pid)
     {
-        USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
-        USLOSS_Halt(1);
-    }
-    else if(!processExists(processBeingZapped))
-    {
-        USLOSS_Console("zap failed because the given process does not exist\n");
+        USLOSS_Console("zap(): process being zapped does not exist.  Halting...\n");
         USLOSS_Halt(1);
     }
     else if(processBeingZapped == Current)
@@ -226,10 +216,15 @@ int zap(int pid)
         USLOSS_Console("zap(): process %d tried to zap itself.  Halting...\n", pid);
         USLOSS_Halt(1);
     }
-    else if(processBeingZapped->status == STATUS_QUIT)
+    
+    // Return immediately when zapping a quit process
+    if(processBeingZapped->status == STATUS_QUIT)
     {
-        USLOSS_Console("zap failed because the given process has already quit\n");
-        USLOSS_Halt(1);
+        if(Current->isZapped)
+        {
+            return -1;
+        }
+        return 0;
     }
 
     // Change the state of the process being zapped
