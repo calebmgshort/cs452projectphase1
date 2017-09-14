@@ -25,9 +25,18 @@ int blockMe(int block_status)
         USLOSS_Console("Error. blockMe received an order to block a process with status < 10");
         USLOSS_Halt(1);
     }
-    if(Current->isZapped)
+    // If we were zapped beforehand, return -1 immediately.
+    if (Current->isZapped)
+    {
         return -1;
+    }
     Current->status = block_status;
+    dispatcher();
+    // Ensure we weren't zapped while waiting.
+    if (Current->isZapped)
+    {
+        return -1;
+    }
     return 0;
 }
 
@@ -175,6 +184,8 @@ int zap(int pid)
         USLOSS_Console("zap(): Process %d now zapping process %d\n", Current->pid, pid);
     }
     procPtr processBeingZapped = &ProcTable[pidToSlot(pid)];
+
+    // check halting conditions
     if(pid < 0)
     {
         USLOSS_Console("zap failed because the given pid was out of range of the process table\n");
@@ -187,7 +198,7 @@ int zap(int pid)
     }
     else if(processBeingZapped == Current)
     {
-        USLOSS_Console("zap failed because the given process to zap is itself\n");
+        USLOSS_Console("zap(): process %d tried to zap itself.  Halting...\n", Current->pid);
         USLOSS_Halt(1);
     }
     else if(processBeingZapped->status == STATUS_QUIT)
@@ -196,7 +207,7 @@ int zap(int pid)
         USLOSS_Halt(1);
     }
 
-    // Change the status of the process being zapped
+    // Change the state of the process being zapped
     processBeingZapped->isZapped = 1;
 
     if (DEBUG && debugflag)
@@ -214,22 +225,16 @@ int zap(int pid)
         USLOSS_Console("zap(): Now waiting for the zappee to quit\n");
     }
 
-    while(processBeingZapped->status != STATUS_QUIT && processBeingZapped->status != STATUS_DEAD)
+    // Wait for the target to quit
+    dispatcher();
+
+    if(Current->isZapped)
     {
-        if(Current->isZapped)
-        {
-            if (DEBUG && debugflag)
-            {
-                USLOSS_Console("zap(): The zapper %d was zapped while waiting for the zappee %d to quit\n", Current->pid, pid);
-            }
-            return -1;
-        }
         if (DEBUG && debugflag)
         {
-            USLOSS_Console("zap(): Process %d is waiting for zapped process %d to quit\n", Current->pid, pid);
+            USLOSS_Console("zap(): The zapper %d was zapped while waiting for the zappee %d to quit\n", Current->pid, pid);
         }
-        // Call the sentinel since this process can't do anything right now anyway
-        dispatcher();
+        return -1;
     }
     return 0;
 }
