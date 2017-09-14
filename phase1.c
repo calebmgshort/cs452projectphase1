@@ -26,7 +26,7 @@ static void checkDeadlock();
 
 /* -------------------------- Globals ------------------------------------- */
 // Patrick's debugging global variable...
-int debugflag = 0;
+int debugflag = 1;
 
 // the process table
 procStruct ProcTable[MAXPROC];
@@ -150,9 +150,6 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     // ensure that we are in kernel mode
     checkMode("fork1");
 
-    // enable interrupts
-    //enableInterrupts();
-
     // TODO: Professor Homer said (on Piazza) that all phase1 functions should
     // disable interrupts at the beginning
 
@@ -189,13 +186,6 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     if (DEBUG && debugflag)
     {
         USLOSS_Console("fork1(): Initializing process table entry.\n");
-        if(pid == 54){
-            int i;
-            for (i = 0; i < 50; i++)
-            {
-                USLOSS_Console("%d: %d.\n", i, ProcTable[i].status);
-            }
-        }
     }
     int slot = pidToSlot(pid);
     if (DEBUG && debugflag)
@@ -469,7 +459,6 @@ void dispatcher(void)
     }
     if(DEBUG && debugflag)
     {
-        dumpProcesses();
         printPriorityQueue(&ReadyList);
     }
     // Get the next process from the ready list
