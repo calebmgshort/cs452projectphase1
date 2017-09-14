@@ -502,9 +502,10 @@ int sentinel (char *dummy)
 /* check to determine if deadlock has occurred... */
 static void checkDeadlock()
 {
+    int numProc = 2;  // Count the number of processes. Sentinel is the first
     for (int slot = 0; slot < MAXPROC; slot++)
     {
-        // These are always sentinel and start1
+        // There is always sentinel and  start1
         if (slot == 1 || slot == 2)
         {
             continue;
@@ -512,15 +513,17 @@ static void checkDeadlock()
         procPtr proc = &ProcTable[slot];
         if (processExists(proc))
         {
-            // The sentinel is called even though other procs exist.
-            // There must be a deadlock
-            if (DEBUG && debugflag)
-            {
-                USLOSS_Console("checkDeadlock(): Found processes that are not sentinel or start1.  Halting...\n");
-            }
-            USLOSS_Halt(1);
+            numProc++;
         }
     }
+    if(numProc > 2)
+    {
+        // The sentinel is called even though other procs exist.
+        // There must be a deadlock
+        USLOSS_Console("checkDeadlock(): numProc = %d. Only Sentinel should be left. Halting...\n", numProc);
+        USLOSS_Halt(1);
+    }
+
     // Currently, there is no reason not to halt here
     USLOSS_Console("All processes completed.\n");
     USLOSS_Halt(0);

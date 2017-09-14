@@ -8,6 +8,7 @@
 extern procPtr Current;
 extern procStruct ProcTable[];
 extern priorityQueue ReadyList;
+extern int debugflag;
 
 /*
  * This operation will block the calling process. newStatus is the value used to indicate the
@@ -161,6 +162,10 @@ int getpid()
    ------------------------------------------------------------------------ */
 int zap(int pid)
 {
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("zap(): Process %d now zapping process %d\n", Current->pid, pid);
+    }
     procPtr processBeingZapped = &ProcTable[pidToSlot(pid)];
     if(pid < 0)
     {
@@ -186,18 +191,33 @@ int zap(int pid)
     // Change the status of the process being zapped
     processBeingZapped->status = STATUS_ZAPPED;
 
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("zap(): Adding the zapper to list of processes that zapped the zappee\n");
+    }
     // Add the current process to the list of processes that zapped the given process
     addZappedProcess(Current, processBeingZapped);
 
     // Change the status of the process that is zapping
     Current->status = STATUS_BLOCKED_ZAP;
 
+    if (DEBUG && debugflag)
+    {
+        USLOSS_Console("zap(): Now waiting for the zappee to quit\n");
+    }
+
     while(processBeingZapped->status != STATUS_QUIT)
     {
         if(Current->status == STATUS_ZAPPED)
         {
+            if (DEBUG && debugflag)
+            {
+                USLOSS_Console("zap(): The zapper %d was zapped while waiting for the zappee %d to quit\n", Current->pid, pid);
+            }
             return -1;
         }
+        // Call the sentinel since this process can't do anything right now anyway
+        dispatcher();
     }
     return 0;
 }
