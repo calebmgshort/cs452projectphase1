@@ -150,9 +150,6 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     // ensure that we are in kernel mode
     checkMode("fork1");
 
-    // TODO: Professor Homer said (on Piazza) that all phase1 functions should
-    // disable interrupts at the beginning
-
     // disable interrupts
     disableInterrupts();
 

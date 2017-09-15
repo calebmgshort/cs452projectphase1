@@ -214,19 +214,8 @@ void disableInterrupts()
     // get the current value of the psr
     unsigned int psr = USLOSS_PsrGet();
 
-    // the current interrupt bit of the psr
-    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
-
-    // set the prev interrupt bit to zero
-    //psr = psr & ~USLOSS_PSR_PREV_INT;
-
-    // move the current interrupt bit to the prev interrupt bit
-    //psr = psr | (currentInterrupt << 2);
-
     // set the current interrupt bit to 0
     psr = psr & ~USLOSS_PSR_CURRENT_INT;
-
-
 
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)
@@ -248,18 +237,8 @@ void enableInterrupts()
     // get the current value of the psr
     unsigned int psr = USLOSS_PsrGet();
 
-    // the current interrupt bit of the psr
-    unsigned int currentInterrupt = psr & USLOSS_PSR_CURRENT_INT;
-
-    // set the prev interrupt bit to zero
-    //psr = psr & ~USLOSS_PSR_PREV_INT;
-
-    // move the current interrupt bit to the prev interrupt bit
-    //psr = psr | (currentInterrupt << 2);
-
     // set the current interrupt bit to 1
     psr = psr | USLOSS_PSR_CURRENT_INT;
-
 
     // if USLOSS gives an error, we've done something wrong!
     if (USLOSS_PsrSet(psr) == USLOSS_ERR_INVALID_PSR)

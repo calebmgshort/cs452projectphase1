@@ -20,6 +20,9 @@ extern int debugflag;
  */
 int blockMe(int block_status)
 {
+    checkMode("blockMe");
+    disableInterrupts();
+
     if(block_status <= 10)
     {
         USLOSS_Console("Error. blockMe received an order to block a process with status < 10");
@@ -52,6 +55,9 @@ int blockMe(int block_status)
  */
 int unblockProc(int pid)
 {
+    checkMode("unblockProc");
+    disableInterrupts();
+
     //  Make sure everything is valid
     procPtr process = &ProcTable[pidToSlot(pid)];
     if(!processExists(process) || process->pid == Current->pid || process->status <= 10)
@@ -73,6 +79,7 @@ int unblockProc(int pid)
  */
 int readCurStartTime(void)
 {
+    checkMode("readCurStartTime");
     return Current->startTime;
 }
 
@@ -80,8 +87,11 @@ int readCurStartTime(void)
  * This operation calls the dispatcher if the currently executing process has exceeded its time slice;
  * otherwise, it simply returns.
  */
- void timeSlice()
- {
+void timeSlice()
+{
+     checkMode("timeSlice");
+     disableInterrupts();
+
      int currentTime = getCurrentTime();
 
      if (currentTime - Current->startTime > MAX_TIME_SLICE)
@@ -89,13 +99,14 @@ int readCurStartTime(void)
          dispatcher();
      }
      return;
- }
+}
 
 /*
  * Return the CPU time (in milliseconds) used by the current process.
  */
 int readtime(void)
 {
+    checkMode("readtime");
     return Current->CPUTime/1000;
 }
 
@@ -106,6 +117,9 @@ int readtime(void)
  */
 void dumpProcesses()
 {
+    checkMode("dumpProcesses");
+    disableInterrupts();
+
     USLOSS_Console("PID\tParent\tPriority\tStatus\t\t# Kids\tCPUtime\tName \n");
     int i;
     for(i = 0; i < 50; i++)
@@ -191,6 +205,7 @@ void dumpProcesses()
  */
 int getpid()
 {
+    checkMode("getpid");
     return Current->pid;
 }
 
@@ -278,6 +293,8 @@ int zap(int pid)
    ------------------------------------------------------------------------ */
 int isZapped(void)
 {
+    checkMode("isZapped");
+
     if(Current->isZapped)
     {
         return 1;
