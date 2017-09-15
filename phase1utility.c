@@ -99,6 +99,10 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     proc->nextSiblingPtr = NULL;
     proc->quitChildPtr = NULL;
     proc->nextQuitSiblingPtr = NULL;
+    proc->procThatZappedMe = NULL;
+    proc->nextSiblingThatZapped = NULL;
+
+    // fill out parent pointer
     proc->parentPtr = parentPtr;
 
     // fill out name
@@ -171,6 +175,7 @@ int initProc(procPtr parentPtr, procPtr proc, char *name, int (*startFunc)(char 
     proc->pid = pid;
     proc->status = STATUS_READY;
     proc->CPUTime = 0;
+    proc->isZapped = 0;
 
     return 0;
 }
