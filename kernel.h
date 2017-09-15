@@ -70,5 +70,6 @@ union psrValues
 #define STATUS_DEAD 5          // This process has quit and has been joined by its parent.
 
 #define PID_NEVER_EXISTED -1
+#define NO_PARENT -2
 
 #endif

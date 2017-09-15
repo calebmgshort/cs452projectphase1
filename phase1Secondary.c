@@ -106,75 +106,84 @@ int readtime(void)
  */
 void dumpProcesses()
 {
-  USLOSS_Console("PID\tParent\tPriority\tStatus\t\t# Kids\tCPUtime\tName \n");
-  int i;
-  for(i = 0; i < 50; i++)
-  {
-    procStruct process = ProcTable[i];
-
-    USLOSS_Console(" %d\t  ", process.pid);
-
-    short parentPid = PID_NEVER_EXISTED;
-    if(process.parentPtr != NULL)
+    USLOSS_Console("PID\tParent\tPriority\tStatus\t\t# Kids\tCPUtime\tName \n");
+    int i;
+    for(i = 0; i < 50; i++)
     {
-      parentPid = process.parentPtr->pid;
+        procStruct process = ProcTable[i];
+
+        // process is junk memory if the entry never existed
+        if (process.pid == PID_NEVER_EXISTED || process.status == STATUS_DEAD)
+        {
+            USLOSS_Console(" -1\t  -1\t   -1\t\tEMPTY\t\t  0\t   -1\n");
+            continue;
+        }
+
+        // Print the pid
+        USLOSS_Console(" %d\t  ", process.pid);
+
+        // Print the parent's pid
+        short parentPid;
+        if(process.parentPtr == NULL)
+        {
+            parentPid = NO_PARENT; 
+        }
+        else
+        {
+            parentPid = process.parentPtr->pid;
+        }
+        USLOSS_Console("%d\t   ", parentPid);
+        
+        // Print the priority
+        USLOSS_Console("%d\t\t", process.priority);
+
+        // Print the status, represented as a string
+        char status[30];
+        if(Current != NULL && process.pid == Current->pid)
+        {
+            strcpy(status, "RUNNING\t");
+        }
+        else
+        {
+            switch(process.status)
+            {
+                case(STATUS_BLOCKED_ZAP):
+                    strcpy(status, "ZAP_BLOCK");
+                    break;
+                case(STATUS_BLOCKED_JOIN):
+                    strcpy(status, "JOIN_BLOCK");
+                    break;
+                case(STATUS_READY):
+                    if (process.isZapped)
+                    {
+                        strcpy(status, "ZAPPED\t");
+                    }
+                    else
+                    {
+                        strcpy(status, "READY\t");
+                    }
+                    break;
+                case(STATUS_QUIT):
+                    strcpy(status, "QUIT\t");
+                    break;
+                default:
+                    sprintf(status, "%d\t", process.status);
+                    break;
+            }
+        }
+        USLOSS_Console("%s\t  ", status);
+
+        // Print the number of children
+        USLOSS_Console("%d\t   ", numChildren(&process));
+
+        // Print the CPUTime and name
+        int CPUTime = process.CPUTime;
+        if (CPUTime == 0)
+        {
+            CPUTime = -1;
+        }
+        USLOSS_Console("%d\t%s\n", CPUTime, process.name);
     }
-
-    USLOSS_Console("%d\t   ", parentPid);
-
-    USLOSS_Console("%d\t\t", process.priority);
-
-    char status[30];
-    if(Current != NULL && process.pid == Current->pid)
-    {
-      strcpy(status, "RUNNING\t");
-    }
-    else
-    {
-      switch(process.status)
-      {
-        case(STATUS_EMPTY):
-          strcpy(status, "EMPTY\t");
-          break;
-        case(STATUS_BLOCKED_ZAP):
-          strcpy(status, "ZAP_BLOCK");
-          break;
-        case(STATUS_BLOCKED_JOIN):
-          strcpy(status, "JOIN_BLOCK");
-          break;
-        case(STATUS_READY):
-          if (process.isZapped)
-          {
-            strcpy(status, "ZAPPED\t");
-          }
-          else
-          {
-            strcpy(status, "READY\t");
-          }
-          break;
-        case(STATUS_QUIT):
-          strcpy(status, "QUIT\t");
-          break;
-        case(STATUS_DEAD):
-          strcpy(status, "DEAD\t");
-          break;
-        default:
-          strcpy(status, "UNKOWN\t");
-          break;
-      }
-    }
-    USLOSS_Console("%s\t  ", status);
-
-    USLOSS_Console("%d\t   ", numChildren(&process));
-
-    int CPUTime = process.CPUTime;
-    if(CPUTime == 0)
-    {
-        CPUTime = -1;
-    }
-
-    USLOSS_Console("%d\t%s\n", CPUTime, process.name);
-  }
 }
 
 /*
