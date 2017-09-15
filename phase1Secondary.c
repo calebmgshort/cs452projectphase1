@@ -31,6 +31,7 @@ int blockMe(int block_status)
     // If we were zapped beforehand, return -1 immediately.
     if (Current->isZapped)
     {
+        enableInterrupts();
         return -1;
     }
     Current->status = block_status;
@@ -61,9 +62,15 @@ int unblockProc(int pid)
     //  Make sure everything is valid
     procPtr process = &ProcTable[pidToSlot(pid)];
     if(!processExists(process) || process->pid == Current->pid || process->status <= 10)
+    {
+        enableInterrupts();
         return -2;
+    }
     if(Current->isZapped)
+    {
+        enableInterrupts();
         return -1;
+    }
     // Set the process's status to ready
     process->status = STATUS_READY;
     // Add the process to the readly list
@@ -89,16 +96,17 @@ int readCurStartTime(void)
  */
 void timeSlice()
 {
-     checkMode("timeSlice");
-     disableInterrupts();
+    checkMode("timeSlice");
+    disableInterrupts();
 
-     int currentTime = getCurrentTime();
+    int currentTime = getCurrentTime();
 
-     if (currentTime - Current->startTime > MAX_TIME_SLICE)
-     {
-         dispatcher();
-     }
-     return;
+    if (currentTime - Current->startTime > MAX_TIME_SLICE)
+    {
+        dispatcher();
+    }
+    enableInterrupts();
+    return;
 }
 
 /*
@@ -198,6 +206,7 @@ void dumpProcesses()
         }
         USLOSS_Console("%d\t%s\n", CPUTime, process.name);
     }
+    enableInterrupts();
 }
 
 /*
@@ -244,6 +253,7 @@ int zap(int pid)
     // Return immediately when zapping a quit process
     if(processBeingZapped->status == STATUS_QUIT)
     {
+        enableInterrupts();
         if(Current->isZapped)
         {
             return -1;

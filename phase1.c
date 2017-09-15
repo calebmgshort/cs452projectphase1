@@ -160,6 +160,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         {
             USLOSS_Console("fork1(): fork1 called with stack size < USLOSS_MIN_STACK.\n");
         }
+        enableInterrupts();
         return -2;
     }
 
@@ -171,6 +172,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         {
             USLOSS_Console("fork1(): No room in the process table.\n");
         }
+        enableInterrupts();
         return -1;
     }
     nextPid = pid + 1;
@@ -192,6 +194,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
     procPtr proc = &ProcTable[slot];
     if (initProc(Current, proc, name, startFunc, arg, stacksize, priority, pid) == -1)
     {
+        enableInterrupts();
         return -1;
     }
 
@@ -225,6 +228,7 @@ int fork1(char *name, int (*startFunc)(char *), char *arg, int stacksize, int pr
         }
         dispatcher();
     }
+    enableInterrupts();
     return pid;
 } /* fork1 */
 
@@ -285,6 +289,7 @@ int join(int *status)
         {
             USLOSS_Console("join(): Process %d has no children to join.\n", Current->pid);
         }
+        enableInterrupts();
         return -2;
     }
 
@@ -335,6 +340,8 @@ int join(int *status)
         USLOSS_Console("join(): Removing quit child from child list.\n");
     }
     removeDeadChildren(Current);
+
+    enableInterrupts();
 
     // When join is called by a zapped proc, it returns -1 (but otherwise behaves normally)
     if (Current->isZapped)
@@ -430,6 +437,9 @@ void quit(int status)
    ----------------------------------------------------------------------- */
 void dispatcher(void)
 {
+    checkMode("dispatcher");
+    disableInterrupts();
+
     // Add the runnning time (in microseconds) to the last process
     if (Current != NULL)
     {
@@ -475,6 +485,9 @@ void dispatcher(void)
         old = &(Current->state);
     }
     USLOSS_Context *new = &(nextProcess->state);
+
+    enableInterrupts();
+
     if (Current != NULL)
     {
         if (DEBUG && debugflag)

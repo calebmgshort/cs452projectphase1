@@ -269,19 +269,6 @@ void addChild(procPtr child, procPtr parent)
             {
                 olderSib = olderSib->nextSiblingPtr;
             }
-            /*
-            if(child->pid == 53)
-            {
-                USLOSS_Console("addChild(): olderSibling pid=%d, child pid=53.\n", olderSib->pid);
-                procPtr bigBro = parent->childProcPtr;;
-                while (bigBro->nextSiblingPtr != NULL)
-                {
-                    USLOSS_Console("pid=%d.\n", bigBro->pid);
-                    bigBro = bigBro->nextSiblingPtr;
-                }
-                USLOSS_Console("pid=%d.\n", bigBro->pid);
-            }
-            */
             olderSib->nextSiblingPtr = child;
         }
     }
